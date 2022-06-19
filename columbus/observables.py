@@ -82,7 +82,7 @@ def _clip(num, lower, upper):
 
 
 class RayObservable(Observable):
-    def __init__(self, num_rays=24, chans=[entities.Enemy, entities.Reward], ray_len=256):
+    def __init__(self, num_rays=24, chans=[entities.Enemy, entities.Reward, entities.Void], ray_len=256):
         super(RayObservable, self).__init__()
         self.num_rays = num_rays
         self.chans = chans
@@ -100,25 +100,33 @@ class RayObservable(Observable):
             rad = 2*math.pi/self.num_rays*i
             yield self.ray_len*math.sin(rad), self.ray_len*math.cos(rad)
 
-    def _check_collision(self, pos, entity_type, entities):
-        for entity in entities:
+    def _check_collision(self, pos, entity_type, entities_l):
+        for entity in entities_l:
             if isinstance(entity, entity_type):
-                if entity.shape != 'circle':
-                    raise Exception('Can only raycast circular entities!')
-                sq_dist = (pos[0]-entity.pos[0]*self.env.width) ** 2 \
-                    + (pos[1]-entity.pos[1]*self.env.height)**2
-                if sq_dist < entity.radius**2:
-                    return True
+                if isinstance(entity, entities.Void):
+                    hit = 0 >= pos[0] or pos[0] >= self.env.width or 0 >= pos[1] or pos[0] >= self.env.height
+                    if hit:
+                        print(pos)
+                    return hit
+                else:
+                    if entity.shape != 'circle':
+                        raise Exception('Can only raycast circular entities!')
+                    sq_dist = (pos[0]-entity.pos[0]*self.env.width) ** 2 \
+                        + (pos[1]-entity.pos[1]*self.env.height)**2
+                    if sq_dist < entity.radius**2:
+                        return True
         return False
 
     def _get_possible_entities(self):
-        entities = []
+        entities_l = []
+        if entities.Void in self.chans:
+            entities_l.append(entities.Void(self.env))
         for entity in self.env.entities:
             sq_dist = ((self.env.agent.pos[0]-entity.pos[0])*self.env.width) ** 2 \
                 + ((self.env.agent.pos[1]-entity.pos[1])*self.env.height) ** 2
             if sq_dist <= (entity.radius + self.env.agent.radius + self.ray_len)**2:
-                entities.append(entity)  # cannot use yield here!
-        return entities
+                entities_l.append(entity)  # cannot use yield here!
+        return entities_l
 
     def get_observation(self):
         entities = self._get_possible_entities()

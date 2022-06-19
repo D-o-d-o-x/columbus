@@ -193,3 +193,9 @@ class TimeoutReward(OnceReward):
             self.env.new_abs_reward += self.reward
             self.set_avaible(False)
             self.env.timers.append((self.timeout, self.set_avaible, True))
+
+
+class Void():
+    def __init__(self, env):
+        self.col = (50, 50, 50)
+    pass

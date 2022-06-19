@@ -8,6 +8,7 @@ from observables import Observable, CnnObservable
 
 def main():
     env = ColumbusTest3_1()
+    env = ColumbusTestRay(hide_map=True)
     env.start_pos = [0.6, 0.3]
     playEnv(env)
     env.close()
