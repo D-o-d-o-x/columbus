@@ -33,9 +33,10 @@ class CnnObservable(Observable):
 
     def get_observation_space(self):
         return spaces.Box(low=0, high=255,
-                          shape=(self.out_width, self.out_height), dtype=np.uint8)
+                          shape=(self.out_width, self.out_height, 3), dtype=np.uint8)
 
     def get_observation(self):
+        self.env._ensure_surface()
         x, y = self.env.agent.pos[0]*self.env.width - self.in_width / \
             2, self.env.agent.pos[1]*self.env.height - self.in_height/2
         w, h = self.in_width, self.in_height
@@ -51,7 +52,8 @@ class CnnObservable(Observable):
         self.snap.blit(snap, (cx - x, cy - y))
         self.obs = self.scaler(
             self.snap, (self.out_width, self.out_height))
-        return self.obs
+        arr = pygame.surfarray.array3d(self.obs)
+        return arr
 
     def draw(self):
         if not self.obs:

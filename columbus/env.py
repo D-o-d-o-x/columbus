@@ -25,9 +25,12 @@ class ColumbusEnv(gym.Env):
         self.screen = None
         self.width = 720
         self.height = 720
+        self.visible = False
         self.start_pos = (0.5, 0.5)
         self.speed_fac = 0.01/fps*60
         self.acc_fac = 0.03/fps*60
+        self.die_on_zero = False
+        self.return_on_score = -1  # -1 = never
         self.agent_drag = 0  # 0.01 is a good value
         self.controll_type = 'SPEED'  # one of SPEED, ACC
         self.limit_inp_to_unit_circle = True
@@ -46,9 +49,11 @@ class ColumbusEnv(gym.Env):
         return self.rng.random()
 
     def _ensure_surface(self):
-        if not self.surface:
+        if not self.surface or self.visible and not self.screen:
             self.surface = pygame.Surface((self.width, self.height))
-            self.screen = pygame.display.set_mode((self.width, self.height))
+            if self.visible:
+                self.screen = pygame.display.set_mode(
+                    (self.width, self.height))
             pygame.display.set_caption(self.title)
 
     def _limit_to_unit_circle(self, coords):
@@ -107,7 +112,9 @@ class ColumbusEnv(gym.Env):
         self.score += reward  # aux_reward does not count towards the score
         if self.aux_reward_max:
             reward += self._get_aux_reward()
-        return observation, reward, 0, self.score
+        done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
+            1 and self.score > self.return_on_score
+        info = {'score': self.score, 'reward': reward}
         return observation, reward, done, info
 
     def check_collisions_for(self, entity):
@@ -168,19 +175,18 @@ class ColumbusEnv(gym.Env):
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
         self._seed(self.env_seed)
-        return 0
-        return observation  # reward, done, info can't be included
+        return self.observable.get_observation()
 
     def _draw_entities(self):
         for entity in self.entities:
             entity.draw()
 
     def _draw_observable(self, forceDraw=False):
-        if self.draw_observable or forceDraw:
+        if (self.draw_observable or forceDraw) and self.visible:
             self.observable.draw()
 
     def _draw_joystick(self, forceDraw=False):
-        if self.draw_joystick:
+        if (self.draw_joystick or forceDraw) and self.visible:
             x, y = self.inp
             pygame.draw.circle(self.screen, (100, 100, 100), (50 +
                                                               self.joystick_offset[0], 50+self.joystick_offset[1]), 50, width=1)
@@ -188,6 +194,7 @@ class ColumbusEnv(gym.Env):
                                                               self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
     def render(self, mode='human'):
+        self.visible = True
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
@@ -195,7 +202,8 @@ class ColumbusEnv(gym.Env):
         self.screen.blit(self.surface, (0, 0))
         self._draw_observable()
         self._draw_joystick()
-        pygame.display.update()
+        if self.visible:
+            pygame.display.update()
 
     def close(self):
         pygame.display.quit()
@@ -205,4 +213,7 @@ class ColumbusEnv(gym.Env):
 class ColumbusTest3_1(ColumbusEnv):
     def __init__(self):
         super(ColumbusTest3_1, self).__init__(
-            observable=observables.CnnObservable())
+            observable=observables.CnnObservable(out_width=48, out_height=48))
+        self.start_pos = [0.6, 0.3]
+        self.fps = 30
+        self.score = 0
