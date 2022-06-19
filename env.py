@@ -8,7 +8,7 @@ import entities
 import observables
 
 
-class Base2DExpEnv(gym.Env):
+class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1):
