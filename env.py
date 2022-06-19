@@ -12,7 +12,7 @@ class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1):
-        super(Base2DExpEnv, self).__init__()
+        super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=0, high=1, shape=(2,), dtype=np.float32)
         observable._set_env(self)
@@ -121,7 +121,7 @@ class ColumbusEnv(gym.Env):
         shapes = [e1.shape, e2.shape]
         shapes.sort()
         if shapes == ['circle', 'circle']:
-            sq_dist = ((e1.pos[0]-e2[0])*self.width) ** 2 \
+            sq_dist = ((e1.pos[0]-e2.pos[0])*self.width) ** 2 \
                 + ((e1.pos[1]-e2.pos[1])*self.height)**2
             return sq_dist < (e1.radius + e2.radius)**2
         else:
@@ -139,7 +139,7 @@ class ColumbusEnv(gym.Env):
         self.entities = newEntities
 
     def setup(self):
-        for i in range(16):
+        for i in range(18):
             enemy = entities.CircleBarrier(self)
             enemy.radius = self.random()*40+50
             self.entities.append(enemy)
