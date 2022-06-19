@@ -113,11 +113,20 @@ class ColumbusEnv(gym.Env):
     def check_collisions_for(self, entity):
         for other in self.entities:
             if other != entity:
-                sq_dist = ((other.pos[0]-entity.pos[0])*self.width) ** 2 \
-                    + ((other.pos[1]-entity.pos[1])*self.height)**2
-                if sq_dist < (entity.radius + other.radius)**2:
+                if self._check_collision_between(entity, other):
                     entity.on_collision(other)
                     other.on_collision(entity)
+
+    def _check_collision_between(self, e1, e2):
+        shapes = [e1.shape, e2.shape]
+        shapes.sort()
+        if shapes == ['circle', 'circle']:
+            sq_dist = ((e1.pos[0]-e2[0])*self.width) ** 2 \
+                + ((e1.pos[1]-e2.pos[1])*self.height)**2
+            return sq_dist < (e1.radius + e2.radius)**2
+        else:
+            raise Exception(
+                'Checking for collision between unsupported shapes: '+str(shapes))
 
     def kill_entity(self, target):
         newEntities = []
