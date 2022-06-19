@@ -5,7 +5,7 @@ Project Columbus is a framework for trivial 2D OpenAI Gym environments that are 
 ![Screenshot](./img_README.png)
 
 ### env.py
-Contains the ColumbusEnv. New envs are implemented by subclassing ColumbusEnv and expanding \__init\__() and overriding setup().
+Contains the ColumbusEnv. New envs are implemented by subclassing ColumbusEnv and expanding _init_ and overriding _setup_.
 
 ### entities.py
 Contains all implemented entities (e.g. the Agent, Rewards and Enemys)
