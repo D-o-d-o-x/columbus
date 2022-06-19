@@ -31,6 +31,7 @@ class ColumbusEnv(gym.Env):
         self.acc_fac = 0.03/fps*60
         self.die_on_zero = False
         self.return_on_score = -1  # -1 = never
+        self.reward_mult = 1
         self.agent_drag = 0  # 0.01 is a good value
         self.controll_type = 'SPEED'  # one of SPEED, ACC
         self.limit_inp_to_unit_circle = True
@@ -38,6 +39,7 @@ class ColumbusEnv(gym.Env):
         self.aux_reward_discretize = 0  # 0 = dont discretize
         self.draw_observable = True
         self.draw_joystick = True
+        self.draw_entities = True
 
         self.rng = random_dont_use.Random()
         self.reset()
@@ -77,11 +79,11 @@ class ColumbusEnv(gym.Env):
                 new_timers.append((time_left, func, arg))
         self.timers = new_timers
 
-    def sq_dist(self, entity1, entity2):
-        return (entity1.pos[0] - entity2.pos[0])**2 + (entity1.pos[1] - entity2.pos[1])**2
+    def sq_dist(self, pos1, pos2):
+        return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2
 
-    def dist(self, entity1, entity2):
-        return math.sqrt(self._sq_dist(entity1, entity2))
+    def dist(self, pos1, pos2):
+        return math.sqrt(self.sq_dist(pos1, pos2))
 
     def _get_aux_reward(self):
         aux_reward = 0
@@ -89,7 +91,7 @@ class ColumbusEnv(gym.Env):
             if isinstance(entity, entities.Reward):
                 if entity.avaible:
                     reward = self.aux_reward_max / \
-                        (1 + self.sq_dist(entity, self.agent))
+                        (1 + self.sq_dist(entity.pos, self.agent.pos))
 
                     if self.aux_reward_discretize:
                         reward = int(reward*self.aux_reward_discretize*2) / \
@@ -115,7 +117,8 @@ class ColumbusEnv(gym.Env):
         done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
             1 and self.score > self.return_on_score
         info = {'score': self.score, 'reward': reward}
-        return observation, reward, done, info
+        self._rendered = False
+        return observation, reward*self.reward_mult, done, info
 
     def check_collisions_for(self, entity):
         for other in self.entities:
@@ -164,6 +167,7 @@ class ColumbusEnv(gym.Env):
 
     def reset(self):
         pygame.init()
+        self._rendered = False
         self.inp = (0.5, 0.5)
         # will get rescaled acording to fps (=reward per second)
         self.new_reward = 0
@@ -193,12 +197,18 @@ class ColumbusEnv(gym.Env):
             pygame.draw.circle(self.screen, (100, 100, 100), (20+int(60*x) +
                                                               self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
-    def render(self, mode='human'):
-        self.visible = True
+    def render(self, mode='human', dont_show=False):
+        self.visible = self.visible or not dont_show
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
-        self._draw_entities()
+        if self.draw_entities:
+            self._draw_entities()
+        else:
+            self.agent.draw()
+        self._rendered = True
+        if dont_show:
+            return
         self.screen.blit(self.surface, (0, 0))
         self._draw_observable()
         self._draw_joystick()
@@ -217,3 +227,16 @@ class ColumbusTest3_1(ColumbusEnv):
         self.start_pos = [0.6, 0.3]
         self.fps = 30
         self.score = 0
+        self.reward_mult = 0.001
+        self.aux_reward_max = 1
+
+
+class ColumbusTestRay(ColumbusEnv):
+    def __init__(self):
+        super(ColumbusTestRay, self).__init__(
+            observable=observables.RayObservable())
+        self.start_pos = [0.6, 0.3]
+        self.fps = 30
+        self.score = 0
+        self.reward_mult = 0.001
+        self.aux_reward_max = 1
