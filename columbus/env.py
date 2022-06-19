@@ -232,7 +232,7 @@ class ColumbusTest3_1(ColumbusEnv):
 
 
 class ColumbusTestRay(ColumbusEnv):
-    def __init__(self):
+    def __init__(self, hide_map=False):
         super(ColumbusTestRay, self).__init__(
             observable=observables.RayObservable())
         self.start_pos = [0.6, 0.3]
@@ -240,3 +240,4 @@ class ColumbusTestRay(ColumbusEnv):
         self.score = 0
         self.reward_mult = 0.001
         self.aux_reward_max = 1
+        self.draw_entities = not hide_map
