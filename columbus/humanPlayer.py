@@ -1,5 +1,5 @@
 from time import sleep, time
-from env import ColumbusEnv, ColumbusTest3_1
+from env import *
 import numpy as np
 import pygame
 
