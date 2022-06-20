@@ -1,3 +1,4 @@
+from gym.envs.registration import register
 import gym
 from gym import spaces
 import numpy as np
@@ -16,7 +17,6 @@ class ColumbusEnv(gym.Env):
             low=0, high=1, shape=(2,), dtype=np.float32)
         observable._set_env(self)
         self.observable = observable
-        self.observation_space = self.observable.get_observation_space()
         self.title = 'Untitled'
         self.fps = fps
         self.env_seed = env_seed
@@ -40,11 +40,17 @@ class ColumbusEnv(gym.Env):
         self.draw_observable = True
         self.draw_joystick = True
         self.draw_entities = True
+        self.void_barrier = True
+        self.void_damage = 100
 
         self.rng = random_dont_use.Random()
         self.reset()
 
+        self.observation_space = self.observable.get_observation_space()
+
     def _seed(self, seed):
+        if seed == None:
+            seed = random_dont_use.random()
         self.rng.seed(seed)
 
     def random(self):
@@ -112,6 +118,9 @@ class ColumbusEnv(gym.Env):
         reward, self.new_reward, self.new_abs_reward = self.new_reward / \
             self.fps + self.new_abs_reward, 0, 0
         self.score += reward  # aux_reward does not count towards the score
+        if self.agent.pos[0] < 0.001 or self.agent.pos[0] > 0.999 \
+                or self.agent.pos[1] < 0.001 or self.agent.pos[1] > 0.999:
+            reward -= self.void_damage/self.fps
         if self.aux_reward_max:
             reward += self._get_aux_reward()
         done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
@@ -150,20 +159,7 @@ class ColumbusEnv(gym.Env):
 
     def setup(self):
         self.agent.pos = self.start_pos
-        for i in range(18):
-            enemy = entities.CircleBarrier(self)
-            enemy.radius = self.random()*40+50
-            self.entities.append(enemy)
-        for i in range(3):
-            enemy = entities.FlyingChaser(self)
-            enemy.chase_acc = self.random()*0.4*0.3  # *0.6+0.5
-            self.entities.append(enemy)
-        for i in range(0):
-            reward = entities.TimeoutReward(self)
-            self.entities.append(reward)
-        for i in range(1):
-            reward = entities.TeleportingReward(self)
-            self.entities.append(reward)
+        # Expand this function
 
     def reset(self):
         pygame.init()
@@ -221,23 +217,158 @@ class ColumbusEnv(gym.Env):
 
 
 class ColumbusTest3_1(ColumbusEnv):
-    def __init__(self):
+    def __init__(self, observable=observables.CnnObservable(out_width=48, out_height=48), fps=30):
         super(ColumbusTest3_1, self).__init__(
-            observable=observables.CnnObservable(out_width=48, out_height=48))
+            observable=observable, fps=fps, env_seed=3.1)
         self.start_pos = [0.6, 0.3]
-        self.fps = 30
         self.score = 0
-        self.reward_mult = 0.001
         self.aux_reward_max = 1
 
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(18):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*40+50
+            self.entities.append(enemy)
+        for i in range(3):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = self.random()*0.4*0.3  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(0):
+            reward = entities.TimeoutReward(self)
+            self.entities.append(reward)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            self.entities.append(reward)
 
-class ColumbusTestRay(ColumbusEnv):
-    def __init__(self, hide_map=False):
+
+class ColumbusTestRay(ColumbusTest3_1):
+    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30):
         super(ColumbusTestRay, self).__init__(
-            observable=observables.RayObservable())
-        self.start_pos = [0.6, 0.3]
-        self.fps = 30
-        self.score = 0
-        self.reward_mult = 0.001
-        self.aux_reward_max = 1
+            observable=observable, fps=fps)
         self.draw_entities = not hide_map
+
+
+class ColumbusRayDrone(ColumbusTestRay):
+    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30):
+        super(ColumbusRayDrone, self).__init__(
+            observable=observable, hide_map=hide_map,  fps=fps)
+        self.controll_type = 'ACC'
+        self.agent_drag = 0.02
+
+
+class ColumbusCandyland(ColumbusEnv):
+    def __init__(self, observable=observables.RayObservable(chans=[entities.Reward, entities.Void], num_rays=16, include_rand=True), hide_map=False, fps=30):
+        super(ColumbusCandyland, self).__init__(
+            observable=observable,  fps=fps)
+        self.draw_entities = not hide_map
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(0):
+            reward = entities.TimeoutReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+        for i in range(2):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+
+
+class ColumbusEasyObstacles(ColumbusEnv):
+    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
+        super(ColumbusEasyObstacles, self).__init__(
+            observable=observable,  fps=fps)
+        self.draw_entities = not hide_map
+        self.aux_reward_max = 0.1
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(5):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = 30 + self.random()*70
+            self.entities.append(enemy)
+        for i in range(2):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+        for i in range(1):
+            enemy = entities.WalkingChaser(self)
+            enemy.chase_speed = 0.1
+            self.entities.append(enemy)
+
+
+class ColumbusRewardEnemyPID(ColumbusEnv):
+    def __init__(self, observable=observables.StateObservable(), fps=30, env_seed=None):
+        super(ColumbusRewardEnemyPID, self).__init__(
+            observable=observable,  fps=fps)
+        self.aux_reward_max = 0.1
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        # for i in range(2):
+        #    enemy = entities.WalkingChaser(self)
+        #    self.entities.append(enemy)
+        for i in range(3):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = self.random()*0.4+0.3  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+
+
+class ColumbusRewardEnemyPIDWithBarriers(ColumbusEnv):
+    def __init__(self, observable=observables.StateObservable(), fps=30, env_seed=3.1):
+        super(ColumbusRewardEnemyPIDWithBarriers, self).__init__(
+            observable=observable,  fps=fps)
+        self.aux_reward_max = 0.01
+        self.start_pos = (0.5, 0.5)
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(3):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*25+75
+            self.entities.append(enemy)
+        for i in range(3):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = self.random()*0.4+0.3  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+
+
+###
+register(
+    id='ColumbusTestCnn-v0',
+    entry_point=ColumbusTest3_1,
+    max_episode_steps=30*60*5,
+)
+
+register(
+    id='ColumbusTestRay-v0',
+    entry_point=ColumbusTestRay,
+    max_episode_steps=30*60*5,
+)
+
+register(
+    id='ColumbusRayDrone-v0',
+    entry_point=ColumbusRayDrone,
+    max_episode_steps=30*60*5,
+)
+
+register(
+    id='ColumbusCandyland-v0',
+    entry_point=ColumbusCandyland,
+    max_episode_steps=30*60*5,
+)
+
+register(
+    id='ColumbusEasyObstacles-v0',
+    entry_point=ColumbusEasyObstacles,
+    max_episode_steps=30*60*2,
+)
