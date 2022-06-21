@@ -179,6 +179,7 @@ class ColumbusEnv(gym.Env):
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
         self._seed(self.env_seed)
+        self.observable._entities = None
         return self.observable.get_observation()
 
     def _draw_entities(self):
@@ -338,9 +339,9 @@ class ColumbusEasierObstacles(ColumbusEnv):
             self.entities.append(enemy)
 
 
-class ColumbusRewardEnemyPID(ColumbusEnv):
+class ColumbusJustState(ColumbusEnv):
     def __init__(self, observable=observables.StateObservable(), fps=30, env_seed=None):
-        super(ColumbusRewardEnemyPID, self).__init__(
+        super(ColumbusJustState, self).__init__(
             observable=observable,  fps=fps)
         self.aux_reward_max = 0.1
 
@@ -359,10 +360,10 @@ class ColumbusRewardEnemyPID(ColumbusEnv):
             self.entities.append(reward)
 
 
-class ColumbusRewardEnemyPIDWithBarriers(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(), fps=30, env_seed=3.1):
-        super(ColumbusRewardEnemyPIDWithBarriers, self).__init__(
-            observable=observable,  fps=fps)
+class ColumbusStateWithBarriers(ColumbusEnv):
+    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.1):
+        super(ColumbusStateWithBarriers, self).__init__(
+            observable=observable,  fps=fps, env_seed=env_seed)
         self.aux_reward_max = 0.01
         self.start_pos = (0.5, 0.5)
 
@@ -416,5 +417,11 @@ register(
 register(
     id='ColumbusEasierObstacles-v0',
     entry_point=ColumbusEasyObstacles,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusStateWithBarriers-v0',
+    entry_point=ColumbusStateWithBarriers,
     max_episode_steps=30*60*2,
 )
