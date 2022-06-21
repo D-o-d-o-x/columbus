@@ -188,7 +188,6 @@ class StateObservable(Observable):
     def entities(self):
         if not self._entities == None:
             return self._entities
-        print('Building StateGetters')
         rewardsWhitelist = self.rewardsWhitelist or self.env.entities
         enemysWhitelist = self.enemysWhitelist or self.env.entities
         self._entities = []
@@ -207,7 +206,6 @@ class StateObservable(Observable):
             for entity in enemysWhitelist:
                 if isinstance(entity, entities.TimeoutReward):
                     self._timeoutEntities.append(entity)
-        print(len(self._entities))
         return self._entities
 
     def get_observation_space(self):
