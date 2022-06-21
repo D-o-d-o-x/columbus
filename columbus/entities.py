@@ -195,6 +195,7 @@ class TimeoutReward(OnceReward):
             self.env.timers.append((self.timeout, self.set_avaible, True))
 
 
+# Not a real entity. Is used in the config of RayObserver to reference the outer boundary of the environment.
 class Void():
     def __init__(self, env):
         self.col = (50, 50, 50)
