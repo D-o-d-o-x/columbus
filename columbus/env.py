@@ -4,7 +4,9 @@ from gym import spaces
 import numpy as np
 import pygame
 import random as random_dont_use
+from os import urandom
 import math
+from time import time as get_time
 from columbus import entities, observables
 
 
@@ -44,13 +46,14 @@ class ColumbusEnv(gym.Env):
         self.void_damage = 100
 
         self.rng = random_dont_use.Random()
+        self._seed(self.env_seed)
         self.reset()
 
         self.observation_space = self.observable.get_observation_space()
 
     def _seed(self, seed):
         if seed == None:
-            seed = random_dont_use.random()
+            seed = urandom(12)
         self.rng.seed(seed)
 
     def random(self):
@@ -165,6 +168,7 @@ class ColumbusEnv(gym.Env):
         pygame.init()
         self._rendered = False
         self.inp = (0.5, 0.5)
+        self.keypress_timeout = 0
         # will get rescaled acording to fps (=reward per second)
         self.new_reward = 0
         self.new_abs_reward = 0  # will not get rescaled. should be used for one-time rewards
@@ -194,6 +198,18 @@ class ColumbusEnv(gym.Env):
                                                               self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
     def render(self, mode='human', dont_show=False):
+        for event in pygame.event.get():
+            pass
+        keys = pygame.key.get_pressed()
+        if self.keypress_timeout == 0:
+            self.keypress_timeout = int(self.fps/2)
+            if keys[pygame.K_m]:
+                self.draw_entities = not self.draw_entities
+            else:
+                self.keypress_timeout = 0
+        else:
+            self.keypress_timeout -= 1
+
         self.visible = self.visible or not dont_show
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
@@ -258,9 +274,9 @@ class ColumbusRayDrone(ColumbusTestRay):
 
 
 class ColumbusCandyland(ColumbusEnv):
-    def __init__(self, observable=observables.RayObservable(chans=[entities.Reward, entities.Void], num_rays=16, include_rand=True), hide_map=False, fps=30):
+    def __init__(self, observable=observables.RayObservable(chans=[entities.Reward, entities.Void], num_rays=16, include_rand=True), hide_map=False, fps=30, env_seed=None):
         super(ColumbusCandyland, self).__init__(
-            observable=observable,  fps=fps)
+            observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
 
     def setup(self):
@@ -278,7 +294,7 @@ class ColumbusCandyland(ColumbusEnv):
 class ColumbusEasyObstacles(ColumbusEnv):
     def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
         super(ColumbusEasyObstacles, self).__init__(
-            observable=observable,  fps=fps)
+            observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
         self.aux_reward_max = 0.1
 
@@ -294,7 +310,31 @@ class ColumbusEasyObstacles(ColumbusEnv):
             self.entities.append(reward)
         for i in range(1):
             enemy = entities.WalkingChaser(self)
-            enemy.chase_speed = 0.1
+            enemy.chase_speed = 0.20
+            self.entities.append(enemy)
+
+
+class ColumbusEasierObstacles(ColumbusEnv):
+    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
+        super(ColumbusEasierObstacles, self).__init__(
+            observable=observable,  fps=fps, env_seed=env_seed)
+        self.draw_entities = not hide_map
+        self.aux_reward_max = 0.5
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(5):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = 30 + self.random()*70
+            self.entities.append(enemy)
+        for i in range(3):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            reward.reward *= 2
+            self.entities.append(reward)
+        for i in range(1):
+            enemy = entities.WalkingChaser(self)
+            enemy.chase_speed = 0.20
             self.entities.append(enemy)
 
 
@@ -369,6 +409,12 @@ register(
 
 register(
     id='ColumbusEasyObstacles-v0',
+    entry_point=ColumbusEasyObstacles,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusEasierObstacles-v0',
     entry_point=ColumbusEasyObstacles,
     max_episode_steps=30*60*2,
 )
