@@ -8,7 +8,7 @@ from observables import Observable, CnnObservable
 
 def main():
     #env = ColumbusTest3_1(fps=30)
-    env = ColumbusEasierObstacles(fps=30)
+    env = ColumbusStateWithBarriers(fps=30)
     env.start_pos = [0.6, 0.3]
     playEnv(env)
     env.close()
@@ -17,7 +17,6 @@ def main():
 def playEnv(env):
     env.reset()
     done = False
-    to = 0
     while not done:
         t1 = time()
         env.render()
