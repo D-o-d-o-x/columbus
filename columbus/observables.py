@@ -58,10 +58,10 @@ class CnnObservable(Observable):
         snap = self.env.surface.subsurface(rect)
         self.snap = pygame.Surface((self.in_width, self.in_height))
         if self.env.void_barrier:
-            col = (223, 0, 0)
+            col = (255, 0, 0)
         else:
             col = (50, 50, 50)
-        pygame.draw.rect(self.snap, (50, 50, 50),
+        pygame.draw.rect(self.snap, col,
                          pygame.Rect(0, 0, self.in_width, self.in_height))
         self.snap.blit(snap, (cx - x, cy - y))
         self.obs = self.scaler(
