@@ -1,9 +1,9 @@
 from time import sleep, time
-import env
 import numpy as np
 import pygame
 
-from observables import Observable, CnnObservable
+from columbus import env
+from columbus.observables import Observable, CnnObservable
 
 
 def main():
