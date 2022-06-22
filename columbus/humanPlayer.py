@@ -1,5 +1,5 @@
 from time import sleep, time
-from env import *
+import env
 import numpy as np
 import pygame
 
@@ -7,11 +7,35 @@ from observables import Observable, CnnObservable
 
 
 def main():
-    #env = ColumbusTest3_1(fps=30)
-    env = ColumbusStateWithBarriers(fps=30)
+    Env = chooseEnv()
+    env = Env(fps=30)
     env.start_pos = [0.6, 0.3]
     playEnv(env)
     env.close()
+
+
+def getAvaibleEnvs():
+    # kinda hacky... idk
+    strs = dir(env)
+    for s in strs:
+        if s.startswith('Columbus') and s != 'ColumbusEnv':
+            yield getattr(env, s)
+
+
+def chooseEnv():
+    envs = list(getAvaibleEnvs())
+    for i, Env in enumerate(envs):
+        print('['+str(i)+'] '+Env.__name__)
+    while True:
+        inp = input('[#> ')
+        try:
+            i = int(inp)
+        except:
+            print('[!] You have to enter the number...')
+        if i < 0 or i >= len(envs):
+            print(
+                '[!] That is a number, but not one that makes sense in this context...')
+        return envs[i]
 
 
 def playEnv(env):
