@@ -166,6 +166,7 @@ class ColumbusEnv(gym.Env):
 
     def reset(self):
         pygame.init()
+        self._seed(self.env_seed)
         self._rendered = False
         self.inp = (0.5, 0.5)
         self.keypress_timeout = 0
@@ -178,7 +179,6 @@ class ColumbusEnv(gym.Env):
         self.agent = entities.Agent(self)
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
-        self._seed(self.env_seed)
         self.observable._entities = None
         return self.observable.get_observation()
 
@@ -206,6 +206,8 @@ class ColumbusEnv(gym.Env):
             self.keypress_timeout = int(self.fps/2)
             if keys[pygame.K_m]:
                 self.draw_entities = not self.draw_entities
+            elif keys[pygame.K_r]:
+                self.reset()
             else:
                 self.keypress_timeout = 0
         else:
@@ -361,7 +363,7 @@ class ColumbusJustState(ColumbusEnv):
 
 
 class ColumbusStateWithBarriers(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.1):
+    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141):
         super(ColumbusStateWithBarriers, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.aux_reward_max = 0.01
@@ -373,9 +375,9 @@ class ColumbusStateWithBarriers(ColumbusEnv):
             enemy = entities.CircleBarrier(self)
             enemy.radius = self.random()*25+75
             self.entities.append(enemy)
-        for i in range(3):
+        for i in range(1):
             enemy = entities.FlyingChaser(self)
-            enemy.chase_acc = self.random()*0.4+0.3  # *0.6+0.5
+            enemy.chase_acc = 0.55  # *0.6+0.5
             self.entities.append(enemy)
         for i in range(1):
             reward = entities.TeleportingReward(self)
