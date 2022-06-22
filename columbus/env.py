@@ -386,28 +386,29 @@ class ColumbusStateWithBarriers(ColumbusEnv):
 
 
 ###
+
 register(
     id='ColumbusTestCnn-v0',
     entry_point=ColumbusTest3_1,
-    max_episode_steps=30*60*5,
+    max_episode_steps=30*60*2,
 )
 
 register(
     id='ColumbusTestRay-v0',
     entry_point=ColumbusTestRay,
-    max_episode_steps=30*60*5,
+    max_episode_steps=30*60*2,
 )
 
 register(
     id='ColumbusRayDrone-v0',
     entry_point=ColumbusRayDrone,
-    max_episode_steps=30*60*5,
+    max_episode_steps=30*60*2,
 )
 
 register(
     id='ColumbusCandyland-v0',
     entry_point=ColumbusCandyland,
-    max_episode_steps=30*60*5,
+    max_episode_steps=30*60*2,
 )
 
 register(
