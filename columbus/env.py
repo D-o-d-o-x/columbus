@@ -321,6 +321,12 @@ class ColumbusCandyland(ColumbusEnv):
             self.entities.append(reward)
 
 
+class ColumbusCandyland_Aux10(ColumbusCandyland):
+    def __init__(self):
+        super(ColumbusCandyland_Aux10, self).__init__()
+        self.aux_reward_max = 10
+
+
 class ColumbusEasyObstacles(ColumbusEnv):
     def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
         super(ColumbusEasyObstacles, self).__init__(
@@ -442,6 +448,12 @@ register(
 register(
     id='ColumbusCandyland-v0',
     entry_point=ColumbusCandyland,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusCandyland_Aux10-v0',
+    entry_point=ColumbusCandyland_Aux10,
     max_episode_steps=30*60*2,
 )
 
