@@ -135,7 +135,7 @@ class Reward(Entity):
         self.col = (0, 255, 0)
         self.avaible = True
         self.enforce_not_on_barrier = False
-        self.reward = 1
+        self.reward = 10
 
     def on_collision(self, other):
         if isinstance(other, Agent):
@@ -155,7 +155,7 @@ class Reward(Entity):
 class OnceReward(Reward):
     def __init__(self, env):
         super(OnceReward, self).__init__(env)
-        self.reward = 100
+        self.reward = 500
 
     def on_collect(self):
         self.env.new_abs_reward += self.reward
