@@ -37,6 +37,7 @@ class ColumbusEnv(gym.Env):
         self.controll_type = 'SPEED'  # one of SPEED, ACC
         self.limit_inp_to_unit_circle = True
         self.aux_reward_max = 0  # 0 = off
+        self.aux_penalty_max = 0  # 0 = off
         self.aux_reward_discretize = 0  # 0 = dont discretize
         self.draw_observable = True
         self.draw_joystick = True
@@ -109,6 +110,16 @@ class ColumbusEnv(gym.Env):
                             self.aux_reward_discretize / 2
 
                     aux_reward += reward
+            elif isinstance(entity, entities.Enemy):
+                if entity.radiateDamage:
+                    penalty = self.aux_penalty_max / \
+                        (1 + self.sq_dist(entity.pos, self.agent.pos))
+
+                    if self.aux_reward_discretize:
+                        penalty = int(penalty*self.aux_reward_discretize*2) / \
+                            self.aux_reward_discretize / 2
+
+                    aux_reward -= penalty
         return aux_reward
 
     def step(self, action):

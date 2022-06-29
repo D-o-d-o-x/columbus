@@ -91,6 +91,7 @@ class Enemy(Entity):
         super(Enemy, self).__init__(env)
         self.col = (255, 0, 0)
         self.damage = 100
+        self.radiateDamage = True
 
     def on_collision(self, other, depth):
         super().on_collision(other, depth)
