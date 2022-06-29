@@ -1,6 +1,8 @@
 # Project Columbus
 
-<img align="center" src="./icon.svg" alt="icon">
+<p align='center'>
+  <img src='./icon.svg'>
+</p>
 
 Project Columbus is a framework for trivial 2D OpenAI Gym environments that are supposed to test a agents ability to solve tasks that require different forms of exploration effectively and efficiently.  
 
