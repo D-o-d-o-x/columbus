@@ -142,17 +142,18 @@ class ColumbusEnv(gym.Env):
     def check_collisions_for(self, entity):
         for other in self.entities:
             if other != entity:
-                if self._check_collision_between(entity, other):
-                    entity.on_collision(other)
-                    other.on_collision(entity)
+                depth = self._check_collision_between(entity, other)
+                if depth > 0:
+                    entity.on_collision(other, depth)
+                    other.on_collision(entity, depth)
 
     def _check_collision_between(self, e1, e2):
         shapes = [e1.shape, e2.shape]
         shapes.sort()
         if shapes == ['circle', 'circle']:
-            sq_dist = ((e1.pos[0]-e2.pos[0])*self.width) ** 2 \
-                + ((e1.pos[1]-e2.pos[1])*self.height)**2
-            return sq_dist < (e1.radius + e2.radius)**2
+            dist = math.sqrt(((e1.pos[0]-e2.pos[0])*self.width) ** 2
+                             + ((e1.pos[1]-e2.pos[1])*self.height)**2)
+            return max(0, e1.radius + e2.radius - dist)
         else:
             raise Exception(
                 'Checking for collision between unsupported shapes: '+str(shapes))

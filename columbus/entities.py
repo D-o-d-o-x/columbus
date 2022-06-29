@@ -12,6 +12,9 @@ class Entity(object):
         self.radius = 10
         self.col = (255, 255, 255)
         self.shape = 'circle'
+        self.solid = False
+        self.movable = False
+        self.elasticity = 1
 
     def physics_step(self):
         x, y = self.pos
@@ -40,8 +43,21 @@ class Entity(object):
         pygame.draw.circle(self.env.surface, self.col,
                            (x*self.env.width, y*self.env.height), self.radius, width=0)
 
-    def on_collision(self, other):
-        pass
+    def on_collision(self, other, depth):
+        if self.solid and other.solid:
+            if self.movable:
+                self.on_crash(other, depth)
+
+    def on_crash(self, other, depth):
+        if other.movable:
+            raise Exception('Movable-Movable Collisions not implemented!')
+        force_dir = self.pos[0] - other.pos[0], self.pos[1] - other.pos[1]
+        force_dir_len = math.sqrt(force_dir[0]**2+force_dir[1]**2)
+        force_dir = force_dir[0]/force_dir_len, force_dir[1]/force_dir_len
+        depth /= other.elasticity
+        force_vec = force_dir[0]*depth/self.env.width, \
+            force_dir[1]*depth/self.env.height
+        self.pos = self.pos[0] + force_vec[0], self.pos[1] + force_vec[1]
 
     def kill(self):
         self.env.kill_entity(self)
@@ -54,6 +70,8 @@ class Agent(Entity):
         self.col = (0, 0, 255)
         self.drag = self.env.agent_drag
         self.controll_type = self.env.controll_type
+        self.solid = True
+        self.movable = True
 
     def controll_step(self):
         self._read_input()
@@ -74,7 +92,8 @@ class Enemy(Entity):
         self.col = (255, 0, 0)
         self.damage = 100
 
-    def on_collision(self, other):
+    def on_collision(self, other, depth):
+        super().on_collision(other, depth)
         if isinstance(other, Agent):
             self.env.new_reward -= self.damage
 
@@ -82,6 +101,8 @@ class Enemy(Entity):
 class Barrier(Enemy):
     def __init__(self, env):
         super(Barrier, self).__init__(env)
+        self.solid = True
+        self.movable = False
 
 
 class CircleBarrier(Barrier):
@@ -137,7 +158,8 @@ class Reward(Entity):
         self.enforce_not_on_barrier = False
         self.reward = 10
 
-    def on_collision(self, other):
+    def on_collision(self, other, depth):
+        super().on_collision(other, depth)
         if isinstance(other, Agent):
             self.on_collect()
         elif isinstance(other, Barrier):
