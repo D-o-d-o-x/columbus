@@ -15,7 +15,7 @@ class ColumbusEnv(gym.Env):
     def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
-            low=0, high=1, shape=(2,), dtype=np.float32)
+            low=-1, high=1, shape=(2,), dtype=np.float32)
         observable._set_env(self)
         self.observable = observable
         self.title = 'Untitled'
@@ -112,7 +112,8 @@ class ColumbusEnv(gym.Env):
         return aux_reward
 
     def step(self, action):
-        inp = action[0], action[1]
+        # TODO: Just make the range consistent...
+        inp = (action[0]+1)/2, (action[1]+1)/2
         if self._disturb_next:
             inp = self._disturb_next
             self._disturb_next = False
@@ -322,8 +323,8 @@ class ColumbusCandyland(ColumbusEnv):
 
 
 class ColumbusCandyland_Aux10(ColumbusCandyland):
-    def __init__(self):
-        super(ColumbusCandyland_Aux10, self).__init__()
+    def __init__(self, fps=30):
+        super(ColumbusCandyland_Aux10, self).__init__(fps=fps)
         self.aux_reward_max = 10
 
 
@@ -375,41 +376,41 @@ class ColumbusEasierObstacles(ColumbusEnv):
 
 
 class ColumbusJustState(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(), fps=30, env_seed=None):
+    def __init__(self, observable=observables.StateObservable(), fps=30, num_enemies=0, num_rewards=1, env_seed=None):
         super(ColumbusJustState, self).__init__(
             observable=observable,  fps=fps)
-        self.aux_reward_max = 0.1
+        self.aux_reward_max = 1
+        self.num_enemies = num_enemies
+        self.num_rewards = num_rewards
 
     def setup(self):
         self.agent.pos = self.start_pos
-        # for i in range(2):
-        #    enemy = entities.WalkingChaser(self)
-        #    self.entities.append(enemy)
-        for i in range(3):
+        for i in range(self.num_enemies):
             enemy = entities.FlyingChaser(self)
             enemy.chase_acc = self.random()*0.4+0.3  # *0.6+0.5
             self.entities.append(enemy)
-        for i in range(1):
+        for i in range(self.num_rewards):
             reward = entities.TeleportingReward(self)
             reward.radius = 30
             self.entities.append(reward)
 
 
 class ColumbusStateWithBarriers(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141, num_chasers=1):
+    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141, num_enemys=0, num_barriers=3):
         super(ColumbusStateWithBarriers, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
-        self.aux_reward_max = 10
+        self.aux_reward_max = 1
         self.start_pos = (0.5, 0.5)
-        self.num_chasers = num_chasers
+        self.num_barriers = num_barriers
+        self.num_enemys = num_enemys
 
     def setup(self):
         self.agent.pos = self.start_pos
-        for i in range(3):
+        for i in range(self.num_barriers):
             enemy = entities.CircleBarrier(self)
             enemy.radius = self.random()*25+75
             self.entities.append(enemy)
-        for i in range(self.num_chasers):
+        for i in range(self.num_enemys):
             enemy = entities.FlyingChaser(self)
             enemy.chase_acc = 0.55  # *0.6+0.5
             self.entities.append(enemy)
@@ -466,6 +467,12 @@ register(
 register(
     id='ColumbusEasierObstacles-v0',
     entry_point=ColumbusEasyObstacles,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusJustState-v0',
+    entry_point=ColumbusJustState,
     max_episode_steps=30*60*2,
 )
 
