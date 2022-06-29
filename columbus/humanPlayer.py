@@ -48,6 +48,7 @@ def playEnv(env):
         pos = pygame.mouse.get_pos()
         pos = (min(max((pos[0]-env.joystick_offset[0]-20)/60, 0), 1),
                min(max((pos[1]-env.joystick_offset[1]-20)/60, 0), 1))
+        pos = pos[0]*2-1, pos[1]*2-1
         obs, rew, done, info = env.step(np.array(pos, dtype=np.float32))
         print('Reward: '+str(rew))
         print('Score: '+str(info))
