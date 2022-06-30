@@ -439,6 +439,30 @@ class ColumbusTrivialRay(ColumbusStateWithBarriers):
         self.draw_entities = not hide_map
 
 
+class ColumbusFootball(ColumbusEnv):
+    def __init__(self, observable=observables.RayObservable(num_rays=16, chans=[entities.Goal, entities.Ball, entities.Barrier]), fps=30, walkingOpponent=0, flyingOpponent=0):
+        super(ColumbusFootball, self).__init__(
+            observable=observable, fps=fps, env_seed=None)
+        self.start_pos = [0.5, 0.5]
+        self.score = 0
+        self.walkingOpponents = walkingOpponent
+        self.flyingOpponents = flyingOpponent
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(8):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*40+50
+            self.entities.append(enemy)
+        ball = entities.Ball(self)
+        self.entities.append(ball)
+        self.entities.append(entities.TeleportingGoal(self))
+        for i in range(self.walkingOpponents):
+            self.entities.append(entities.WalkingFootballPlayer(self, ball))
+        for i in range(self.flyingOpponents):
+            self.entities.append(entities.FlyingFootballPlayer(self, ball))
+
+
 ###
 register(
     id='ColumbusTestCnn-v0',
@@ -497,5 +521,11 @@ register(
 register(
     id='ColumbusTrivialRay-v0',
     entry_point=ColumbusTrivialRay,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusFootball-v0',
+    entry_point=ColumbusFootball,
     max_episode_steps=30*60*2,
 )
