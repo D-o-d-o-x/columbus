@@ -13,8 +13,11 @@ class Entity(object):
         self.col = (255, 255, 255)
         self.shape = 'circle'
         self.solid = False
-        self.movable = False
+        self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
         self.elasticity = 1
+        self.collision_changes_speed = False
+        self._crash_list = []
+        self._coll_add_pushback = 0.05
 
     def physics_step(self):
         x, y = self.pos
@@ -23,11 +26,9 @@ class Entity(object):
         vx, vy = vx+ax*self.env.acc_fac,  vy+ay*self.env.acc_fac
         x, y = x+vx*self.env.speed_fac, y+vy*self.env.speed_fac
         if x > 1 or x < 0:
-            x = min(max(x, 0), 1)
-            vx = 0
+            x, y, vx, vy = self.calc_void_collision(x < 0, x, y, vx, vy)
         if y > 1 or y < 0:
-            y = min(max(y, 0), 1)
-            vy = 0
+            x, y, vx, vy = self.calc_void_collision(2 + (x < 0), x, y, vx, vy)
         self.speed = vx/(1+self.drag), vy/(1+self.drag)
         self.pos = x, y
 
@@ -37,6 +38,7 @@ class Entity(object):
     def step(self):
         self.controll_step()
         self.physics_step()
+        self._crash_list = []
 
     def draw(self):
         x, y = self.pos
@@ -49,15 +51,46 @@ class Entity(object):
                 self.on_crash(other, depth)
 
     def on_crash(self, other, depth):
-        if other.movable:
-            raise Exception('Movable-Movable Collisions not implemented!')
+        if other in self._crash_list:
+            return
+        self._crash_list.append(other)
         force_dir = self.pos[0] - other.pos[0], self.pos[1] - other.pos[1]
         force_dir_len = math.sqrt(force_dir[0]**2+force_dir[1]**2)
+        if force_dir_len == 0:
+            return
         force_dir = force_dir[0]/force_dir_len, force_dir[1]/force_dir_len
+        if self.env.agent.pos[0] > 0.99 or self.env.agent.pos[0] < 0.01:
+            force_dir = force_dir[0], force_dir[1] * 2
+        if self.env.agent.pos[1] > 0.99 or self.env.agent.pos[1] < 0.01:
+            force_dir = force_dir[0] * 2, force_dir[1]
+        depth *= 1.0*self.movable/(self.movable + other.movable)/2
         depth /= other.elasticity
         force_vec = force_dir[0]*depth/self.env.width, \
             force_dir[1]*depth/self.env.height
         self.pos = self.pos[0] + force_vec[0], self.pos[1] + force_vec[1]
+        if self._coll_add_pushback:
+            self.pos = self.pos[0] - self.env.inp[0]*self._coll_add_pushback * \
+                self.env.speed_fac, self.pos[1] - self.env.inp[1] * \
+                self._coll_add_pushback*self.env.speed_fac
+        if self.collision_changes_speed:
+            self.speed = self.speed[0] + \
+                force_vec[0]/self.env.speed_fac, self.speed[1] + \
+                force_vec[1]/self.env.speed_fac
+
+    def on_collect(self, other):
+        pass
+
+    def on_collected(self):
+        pass
+
+    def calc_void_collision(self, dir, x, y, vx, vy):
+        if dir < 2:
+            x = min(max(x, 0), 1)
+            vx = 0
+        else:
+            y = min(max(y, 0), 1)
+            vy = 0
+        return x, y, vx, vy
 
     def kill(self):
         self.env.kill_entity(self)
@@ -151,22 +184,25 @@ class FlyingChaser(Chaser):
         self.acc = arrow[0] * self.chase_acc, arrow[1] * self.chase_acc
 
 
-class Reward(Entity):
+class Collectable(Entity):
     def __init__(self, env):
-        super(Reward, self).__init__(env)
-        self.col = (0, 255, 0)
+        super(Collectable, self).__init__(env)
         self.avaible = True
         self.enforce_not_on_barrier = False
         self.reward = 10
+        self.collectors = []
 
     def on_collision(self, other, depth):
         super().on_collision(other, depth)
-        if isinstance(other, Agent):
-            self.on_collect()
-        elif isinstance(other, Barrier):
+        if isinstance(other, Barrier):
             self.on_barrier_collision()
+        else:
+            for Col in self.collectors:
+                if isinstance(other, Col):
+                    other.on_collect(self)
+                    self.on_collected()
 
-    def on_collect(self):
+    def on_collected(self):
         self.env.new_reward += self.reward
 
     def on_barrier_collision(self):
@@ -175,12 +211,20 @@ class Reward(Entity):
             self.env.check_collisions_for(self)
 
 
+class Reward(Collectable):
+    def __init__(self, env):
+        super(Reward, self).__init__(env)
+        self.col = (0, 255, 0)
+        self.reward = 10
+        self.collectors = [Agent]
+
+
 class OnceReward(Reward):
     def __init__(self, env):
         super(OnceReward, self).__init__(env)
         self.reward = 500
 
-    def on_collect(self):
+    def on_collected(self):
         self.env.new_abs_reward += self.reward
         self.kill()
 
@@ -191,7 +235,7 @@ class TeleportingReward(OnceReward):
         self.enforce_not_on_barrier = True
         self.env.check_collisions_for(self)
 
-    def on_collect(self):
+    def on_collected(self):
         self.env.new_abs_reward += self.reward
         self.pos = (self.env.random(), self.env.random())
         self.env.check_collisions_for(self)
@@ -211,14 +255,82 @@ class TimeoutReward(OnceReward):
         else:
             self.col = (50, 100, 50)
 
-    def on_collect(self):
+    def on_collected(self):
         if self.avaible:
             self.env.new_abs_reward += self.reward
             self.set_avaible(False)
             self.env.timers.append((self.timeout, self.set_avaible, True))
 
 
+class Ball(Entity):
+    def __init__(self, env):
+        super(Ball, self).__init__(env)
+        self.col = (255, 128, 0)
+        self.drag = 0.0025
+        self.solid = True
+        self.movable = 10
+        self.elasticity = 1
+        self.collision_changes_speed = True
+        self.wall_reflect_damping = 0.1
+
+    def calc_void_collision(self, dir, x, y, vx, vy):
+        if dir < 2:
+            x = min(max(x, 0), 1)
+            vx = -(vx/(1+self.wall_reflect_damping))
+        else:
+            y = min(max(y, 0), 1)
+            vy = -(vy/(1+self.wall_reflect_damping))
+        return x, y, vx, vy
+
+    def physics_step(self):
+        self.env.check_collisions_for(self)
+        super().physics_step()
+
+
+class Goal(Collectable):
+    def __init__(self, env):
+        super(Goal, self).__init__(env)
+        self.col = (0, 200, 0)
+        self.reward = 500
+        self.radius = 20
+        self.collectors = [Ball]
+
+
+class TeleportingGoal(Goal):
+    def __init__(self, env):
+        super(TeleportingGoal, self).__init__(env)
+        self.enforce_not_on_barrier = True
+        self.env.check_collisions_for(self)
+
+    def on_collected(self):
+        self.env.new_abs_reward += self.reward
+        self.pos = (self.env.random(), self.env.random())
+        self.env.check_collisions_for(self)
+
+
+class FootballPlayer():
+    def __init__(self, env, target):
+        super(FootballPlayer, self).__init__(env)
+        self.col = (200, 0, 100)
+        self.target = target
+        self.solid = True
+        self.movable = 1
+        self.elasticity = 1
+
+
+class WalkingFootballPlayer(FootballPlayer, WalkingChaser):
+    def __init__(self, env, target):
+        super(WalkingFootballPlayer, self).__init__(env, target)
+        self.target = target
+
+
+class FlyingFootballPlayer(FootballPlayer, FlyingChaser):
+    def __init__(self, env, target):
+        super(FlyingFootballPlayer, self).__init__(env, target)
+
 # Not a real entity. Is used in the config of RayObserver to reference the outer boundary of the environment.
+
+
 class Void():
     def __init__(self, env):
         self.col = (50, 50, 50)
