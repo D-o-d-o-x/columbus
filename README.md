@@ -12,7 +12,7 @@ pip install -e .
 ```
 
 ### env.py
-![Screenshot](./img_README.png)
+![Screenshot](./img_README.png)  
 Contains the ColumbusEnv. New envs are implemented by subclassing ColumbusEnv and expanding _init_ and overriding _setup_.
 
 ### entities.py
