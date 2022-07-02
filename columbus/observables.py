@@ -163,6 +163,10 @@ class RayObservable(Observable):
                     self.env.agent.pos[0]*self.env.width, sy + \
                     self.env.agent.pos[1]*self.env.height
                 # TODO: How stupid do I want to code?
+                # This instanciates an Object for every Ray-hit,
+                # just to get the color for the visual.
+                # But since this Code will not be executed during training,
+                # I don't think fixing this is an priority...
                 col = entity_type(self.env).col
                 col = int(col[0]/2), int(col[1]/2), int(col[2]/2)
                 pygame.draw.circle(self.env.screen, col, (rx, ry), 3, width=0)
