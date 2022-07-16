@@ -224,13 +224,15 @@ class ColumbusEnv(gym.Env):
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
     def _draw_confidence_ellipse(self, chol, seconds=1):
-        # def draw_ellipse_angle(surface, color, rect, angle, width=0):
         col = (255, 255, 255)
         f = seconds/self.speed_fac
 
-        if len(chol.shape) == 3:
+        while len(chol.shape) > 2:
             chol = chol[0]
-
+        if chol.shape != (2, 2):
+            chol = th.diag_embed(chol)
+        if len(chol.shape) != 2:
+            chol = chol[0]
         cov = chol.T @ chol
 
         L, V = th.linalg.eig(cov)
