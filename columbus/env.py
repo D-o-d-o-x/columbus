@@ -7,6 +7,7 @@ import random as random_dont_use
 from os import urandom
 import math
 from columbus import entities, observables
+import torch as th
 
 
 class ColumbusEnv(gym.Env):
@@ -47,6 +48,7 @@ class ColumbusEnv(gym.Env):
 
         self.paused = False
         self.keypress_timeout = 0
+        self.can_accept_chol = True
         self.rng = random_dont_use.Random()
         self._seed(self.env_seed)
 
@@ -221,6 +223,40 @@ class ColumbusEnv(gym.Env):
             pygame.draw.circle(self.screen, smolcol, (20+int(60*x) +
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
+    def _draw_confidence_ellipse(self, chol, seconds=1):
+        # def draw_ellipse_angle(surface, color, rect, angle, width=0):
+        col = (255, 255, 255)
+        f = seconds/self.speed_fac
+
+        if len(chol.shape) == 3:
+            chol = chol[0]
+
+        cov = chol.T @ chol
+
+        L, V = th.linalg.eig(cov)
+        L, V = L.real, V.real
+        w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
+        # TODO: Is this correct? We try to solve for teh angle from this:
+        # R = [[cos, -sin],[sin, cos]]
+        # Via only the -sin term.
+        #ang1 = int(math.acos(V[0, 0])/math.pi*360)
+        ang2 = int(math.asin(-V[0, 1])/math.pi*360)
+        #ang3 = int(math.asin(V[1, 0])/math.pi*360)
+        ang = ang2
+
+        # print(cov)
+        #print(w, h, (ang1, ang2, ang3))
+
+        x, y = self.agent.pos
+        x, y = x*self.width, y*self.height
+        rect = pygame.Rect((x-w/2, y-h/2, w, h))
+        shape_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.ellipse(shape_surface, col,
+                            (0, 0, *rect.size), 1)
+        rotated_surf = pygame.transform.rotate(shape_surface, ang)
+        self.screen.blit(rotated_surf, rotated_surf.get_rect(
+            center=rect.center))
+
     def _handle_user_input(self):
         for event in pygame.event.get():
             pass
@@ -251,7 +287,7 @@ class ColumbusEnv(gym.Env):
         elif keys[pygame.K_d]:
             self._disturb_next = (1.0, 0.5)
 
-    def render(self, mode='human', dont_show=False):
+    def render(self, mode='human', dont_show=False, chol=None):
         self._handle_user_input()
         self.visible = self.visible or not dont_show
         self._ensure_surface()
@@ -267,6 +303,8 @@ class ColumbusEnv(gym.Env):
         self.screen.blit(self.surface, (0, 0))
         self._draw_observable()
         self._draw_joystick()
+        if chol != None:
+            self._draw_confidence_ellipse(chol)
         if self.visible:
             pygame.display.update()
 
