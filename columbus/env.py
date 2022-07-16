@@ -43,6 +43,7 @@ class ColumbusEnv(gym.Env):
         self.draw_observable = True
         self.draw_joystick = True
         self.draw_entities = True
+        self.draw_confidence_ellipse = True
         self.void_barrier = True
         self.void_damage = 100
 
@@ -223,41 +224,42 @@ class ColumbusEnv(gym.Env):
             pygame.draw.circle(self.screen, smolcol, (20+int(60*x) +
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
-    def _draw_confidence_ellipse(self, chol, seconds=1):
-        col = (255, 255, 255)
-        f = seconds/self.speed_fac
+    def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=1):
+        if (self.draw_confidence_ellipse or forceDraw) and self.visible:
+            col = (255, 255, 255)
+            f = seconds/self.speed_fac
 
-        while len(chol.shape) > 2:
-            chol = chol[0]
-        if chol.shape != (2, 2):
-            chol = th.diag_embed(chol)
-        if len(chol.shape) != 2:
-            chol = chol[0]
-        cov = chol.T @ chol
+            while len(chol.shape) > 2:
+                chol = chol[0]
+            if chol.shape != (2, 2):
+                chol = th.diag_embed(chol)
+            if len(chol.shape) != 2:
+                chol = chol[0]
+            cov = chol.T @ chol
 
-        L, V = th.linalg.eig(cov)
-        L, V = L.real, V.real
-        w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
-        # TODO: Is this correct? We try to solve for teh angle from this:
-        # R = [[cos, -sin],[sin, cos]]
-        # Via only the -sin term.
-        #ang1 = int(math.acos(V[0, 0])/math.pi*360)
-        ang2 = int(math.asin(-V[0, 1])/math.pi*360)
-        #ang3 = int(math.asin(V[1, 0])/math.pi*360)
-        ang = ang2
+            L, V = th.linalg.eig(cov)
+            L, V = L.real, V.real
+            w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
+            # TODO: Is this correct? We try to solve for teh angle from this:
+            # R = [[cos, -sin],[sin, cos]]
+            # Via only the -sin term.
+            #ang1 = int(math.acos(V[0, 0])/math.pi*360)
+            ang2 = int(math.asin(-V[0, 1])/math.pi*360)
+            #ang3 = int(math.asin(V[1, 0])/math.pi*360)
+            ang = ang2
 
-        # print(cov)
-        #print(w, h, (ang1, ang2, ang3))
+            # print(cov)
+            #print(w, h, (ang1, ang2, ang3))
 
-        x, y = self.agent.pos
-        x, y = x*self.width, y*self.height
-        rect = pygame.Rect((x-w/2, y-h/2, w, h))
-        shape_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
-        pygame.draw.ellipse(shape_surface, col,
-                            (0, 0, *rect.size), 1)
-        rotated_surf = pygame.transform.rotate(shape_surface, ang)
-        self.screen.blit(rotated_surf, rotated_surf.get_rect(
-            center=rect.center))
+            x, y = self.agent.pos
+            x, y = x*self.width, y*self.height
+            rect = pygame.Rect((x-w/2, y-h/2, w, h))
+            shape_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+            pygame.draw.ellipse(shape_surface, col,
+                                (0, 0, *rect.size), 1)
+            rotated_surf = pygame.transform.rotate(shape_surface, ang)
+            self.screen.blit(rotated_surf, rotated_surf.get_rect(
+                center=rect.center))
 
     def _handle_user_input(self):
         for event in pygame.event.get():
@@ -267,6 +269,8 @@ class ColumbusEnv(gym.Env):
             self.keypress_timeout = int(self.fps/5)
             if keys[pygame.K_m]:
                 self.draw_entities = not self.draw_entities
+            elif keys[pygame.K_c]:
+                self.draw_confidence_ellipse = not self.draw_confidence_ellipse
             elif keys[pygame.K_r]:
                 self.reset()
             elif keys[pygame.K_p]:
