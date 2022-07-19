@@ -123,7 +123,7 @@ class ColumbusEnv(gym.Env):
                             self.aux_reward_discretize / 2
 
                     aux_reward -= penalty
-        return aux_reward
+        return aux_reward/self.fps
 
     def step(self, action):
         # TODO: Just make the range consistent...
@@ -381,7 +381,7 @@ class ColumbusCandyland(ColumbusEnv):
 class ColumbusCandyland_Aux10(ColumbusCandyland):
     def __init__(self, fps=30):
         super(ColumbusCandyland_Aux10, self).__init__(fps=fps)
-        self.aux_reward_max = 10
+        self.aux_reward_max = 1
 
 
 class ColumbusEasyObstacles(ColumbusEnv):
@@ -389,7 +389,7 @@ class ColumbusEasyObstacles(ColumbusEnv):
         super(ColumbusEasyObstacles, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 0.1
+        self.aux_reward_max = 1
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -412,7 +412,7 @@ class ColumbusEasierObstacles(ColumbusEnv):
         super(ColumbusEasierObstacles, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 0.5
+        self.aux_reward_max = 1
 
     def setup(self):
         self.agent.pos = self.start_pos
