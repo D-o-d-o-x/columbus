@@ -381,7 +381,7 @@ class ColumbusCandyland(ColumbusEnv):
 class ColumbusCandyland_Aux10(ColumbusCandyland):
     def __init__(self, fps=30):
         super(ColumbusCandyland_Aux10, self).__init__(fps=fps)
-        self.aux_reward_max = 1
+        self.aux_reward_max = 10
 
 
 class ColumbusEasyObstacles(ColumbusEnv):
@@ -389,7 +389,7 @@ class ColumbusEasyObstacles(ColumbusEnv):
         super(ColumbusEasyObstacles, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 1
+        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -412,7 +412,7 @@ class ColumbusEasierObstacles(ColumbusEnv):
         super(ColumbusEasierObstacles, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 1
+        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -435,7 +435,7 @@ class ColumbusJustState(ColumbusEnv):
     def __init__(self, observable=observables.StateObservable(), fps=30, num_enemies=0, num_rewards=1, env_seed=None):
         super(ColumbusJustState, self).__init__(
             observable=observable,  fps=fps)
-        self.aux_reward_max = 1
+        self.aux_reward_max = 10
         self.num_enemies = num_enemies
         self.num_rewards = num_rewards
 
@@ -455,7 +455,7 @@ class ColumbusStateWithBarriers(ColumbusEnv):
     def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141, num_enemys=0, num_barriers=3):
         super(ColumbusStateWithBarriers, self).__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
-        self.aux_reward_max = 1
+        self.aux_reward_max = 10
         self.start_pos = (0.5, 0.5)
         self.num_barriers = num_barriers
         self.num_enemys = num_enemys
