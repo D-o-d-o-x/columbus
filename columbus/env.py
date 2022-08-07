@@ -71,6 +71,8 @@ class ColumbusEnv(gym.Env):
             if self.visible:
                 self.screen = pygame.display.set_mode(
                     (self.width, self.height))
+            else:
+                self.screen = pygame.Surface((self.width, self.height))
             pygame.display.set_caption(self.title)
 
     def _limit_to_unit_circle(self, coords):
@@ -209,11 +211,11 @@ class ColumbusEnv(gym.Env):
             entity.draw()
 
     def _draw_observable(self, forceDraw=False):
-        if (self.draw_observable or forceDraw) and self.visible:
+        if self.draw_observable and (self.visible or forceDraw):
             self.observable.draw()
 
     def _draw_joystick(self, forceDraw=False):
-        if (self.draw_joystick or forceDraw) and self.visible:
+        if self.draw_joystick and (self.visible or forceDraw):
             x, y = self.inp
             bigcol = (100, 100, 100)
             smolcol = (100, 100, 100)
@@ -225,7 +227,7 @@ class ColumbusEnv(gym.Env):
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
     def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=1):
-        if (self.draw_confidence_ellipse or forceDraw) and self.visible:
+        if self.draw_confidence_ellipse and (self.visible or forceDraw):
             col = (255, 255, 255)
             f = seconds/self.speed_fac
 
@@ -304,15 +306,17 @@ class ColumbusEnv(gym.Env):
         else:
             self.agent.draw()
         self._rendered = True
-        if dont_show:
+        if mode == 'human' and dont_show:
             return
         self.screen.blit(self.surface, (0, 0))
-        self._draw_observable()
-        self._draw_joystick()
+        self._draw_observable(forceDraw=mode != 'human')
+        self._draw_joystick(forceDraw=mode != 'human')
         if chol != None:
-            self._draw_confidence_ellipse(chol)
-        if self.visible:
+            self._draw_confidence_ellipse(chol, forceDraw=mode != 'human')
+        if self.visible and mode == 'human':
             pygame.display.update()
+        if mode != 'human':
+            return pygame.surfarray.array3d(self.screen)
 
     def close(self):
         pygame.display.quit()
