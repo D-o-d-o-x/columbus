@@ -431,6 +431,26 @@ class ColumbusEasierObstacles(ColumbusEnv):
             self.entities.append(enemy)
 
 
+class ColumbusComp(ColumbusEnv):
+    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None):
+        super().__init__(
+            observable=observable,  fps=fps, env_seed=env_seed)
+        self.draw_entities = not hide_map
+        self.aux_reward_max = 10
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(5):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = 30 + self.random()*70
+            self.entities.append(enemy)
+        for i in range(3):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            reward.reward *= 2
+            self.entities.append(reward)
+
+
 class ColumbusJustState(ColumbusEnv):
     def __init__(self, observable=observables.StateObservable(), fps=30, num_enemies=0, num_rewards=1, env_seed=None):
         super(ColumbusJustState, self).__init__(
@@ -571,5 +591,11 @@ register(
 register(
     id='ColumbusFootball-v0',
     entry_point=ColumbusFootball,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusComb-v0',
+    entry_point=ColumbusComp,
     max_episode_steps=30*60*2,
 )

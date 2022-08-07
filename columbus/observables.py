@@ -259,3 +259,43 @@ class StateObservable(Observable):
                                (0, y*self.env.height+ofs[0]), 1, width=0)
             pygame.draw.circle(self.env.screen, col,
                                (x*self.env.width+ofs[1], 0), 1, width=0)
+
+
+class CompositionalObservable(Observable):
+    def __init__(self, observables):
+        super().__init__()
+        self.observables = observables
+
+    def get_observation_space(self):
+        num = 0
+        low = 99999
+        high = -99999
+        for i, obs in enumerate(self.observables):
+            space = obs.get_observation_space()
+            num += math.prod(space.shape)
+            low = min(low, float(space.low[0]))
+            high = max(high, float(space.high[0]))
+            if False:
+                if not i:
+                    low = space.low
+                    high = space.high
+                else:
+                    low = np.vstack((low, space.low))
+                    high = np.vstack((high, space.high))
+        return spaces.Box(low=low, high=high,
+                          shape=(num,), dtype=np.float32)
+
+    def get_observation(self):
+        o = [float(point)
+             for obs in self.observables for point in obs.get_observation()]
+        o = np.array(o)
+        return o
+
+    def draw(self):
+        for obs in self.observables:
+            obs.draw()
+
+    def _set_env(self, env):
+        #self.env = env
+        for obs in self.observables:
+            obs._set_env(env)
