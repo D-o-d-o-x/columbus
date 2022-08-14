@@ -71,9 +71,9 @@ class ColumbusEnv(gym.Env):
             if self.visible:
                 self.screen = pygame.display.set_mode(
                     (self.width, self.height))
+                pygame.display.set_caption(self.title)
             else:
                 self.screen = pygame.Surface((self.width, self.height))
-            pygame.display.set_caption(self.title)
 
     def _limit_to_unit_circle(self, coords):
         l_sq = coords[0]**2 + coords[1]**2
