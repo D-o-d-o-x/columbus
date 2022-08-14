@@ -66,7 +66,7 @@ class ColumbusEnv(gym.Env):
         return self.rng.random()
 
     def _ensure_surface(self):
-        if not self.surface or self.visible and not self.screen:
+        if not self.surface or not self.screen:
             self.surface = pygame.Surface((self.width, self.height))
             if self.visible:
                 self.screen = pygame.display.set_mode(
@@ -296,8 +296,9 @@ class ColumbusEnv(gym.Env):
             self._disturb_next = (1.0, 0.5)
 
     def render(self, mode='human', dont_show=False, chol=None):
-        self._handle_user_input()
-        self.visible = self.visible or not dont_show
+        if mode == 'human':
+            self._handle_user_input()
+        self.visible = self.visible and not dont_show
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
