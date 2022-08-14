@@ -298,7 +298,7 @@ class ColumbusEnv(gym.Env):
     def render(self, mode='human', dont_show=False, chol=None):
         if mode == 'human':
             self._handle_user_input()
-        self.visible = self.visible and not dont_show
+        self.visible = self.visible or not dont_show
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
@@ -457,7 +457,7 @@ class ColumbusComp(ColumbusEnv):
 
 
 class ColumbusSingle(ColumbusEnv):
-    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None):
         super().__init__(
             observable=observable,  fps=fps, env_seed=env_seed)
         self.draw_entities = not hide_map
