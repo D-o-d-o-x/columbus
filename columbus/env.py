@@ -13,7 +13,7 @@ import torch as th
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, aux_reward_max=0, aux_penalty_max=0, reward_mult=1):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -31,19 +31,22 @@ class ColumbusEnv(gym.Env):
         self.start_pos = (0.5, 0.5)
         self.speed_fac = 0.01/fps*60
         self.acc_fac = 0.03/fps*60
-        self.die_on_zero = False
-        self.return_on_score = -1  # -1 = never
-        self.reward_mult = 1
-        self.agent_drag = 0  # 0.01 is a good value
+        self.die_on_zero = False  # return (/die) when score hist zero
+        self.return_on_score = -1  # -1 = never; return, when this score is reached
+        self.reward_mult = reward_mult
+        # 0.01 is a good value, drag with the environment (air / ground)
+        self.agent_drag = 0
         self.controll_type = 'SPEED'  # one of SPEED, ACC
         self.limit_inp_to_unit_circle = True
-        self.aux_reward_max = 0  # 0 = off
-        self.aux_penalty_max = 0  # 0 = off
-        self.aux_reward_discretize = 0  # 0 = dont discretize
+        self.aux_reward_max = aux_reward_max  # 0 = off
+        self.aux_penalty_max = aux_penalty_max  # 0 = off
+        # 0 = dont discretize; how many steps (along diagonal)
+        self.aux_reward_discretize = 0
         self.draw_observable = True
         self.draw_joystick = True
         self.draw_entities = True
         self.draw_confidence_ellipse = True
+        # If the Void should be of type Barrier (else it is just of type Void and Entity)
         self.void_barrier = True
         self.void_damage = 100
 
@@ -325,12 +328,11 @@ class ColumbusEnv(gym.Env):
 
 
 class ColumbusTest3_1(ColumbusEnv):
-    def __init__(self, observable=observables.CnnObservable(out_width=48, out_height=48), fps=30):
+    def __init__(self, observable=observables.CnnObservable(out_width=48, out_height=48), fps=30, aux_reward_max=1, **kw):
         super(ColumbusTest3_1, self).__init__(
-            observable=observable, fps=fps, env_seed=3.1)
+            observable=observable, fps=fps, env_seed=3.1, aux_reward_max=aux_reward_max, **kw)
         self.start_pos = [0.6, 0.3]
         self.score = 0
-        self.aux_reward_max = 1
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -351,24 +353,24 @@ class ColumbusTest3_1(ColumbusEnv):
 
 
 class ColumbusTestRay(ColumbusTest3_1):
-    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30):
+    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30, **kw):
         super(ColumbusTestRay, self).__init__(
-            observable=observable, fps=fps)
+            observable=observable, fps=fps, **kw)
         self.draw_entities = not hide_map
 
 
 class ColumbusRayDrone(ColumbusTestRay):
-    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30):
+    def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30, **kw):
         super(ColumbusRayDrone, self).__init__(
-            observable=observable, hide_map=hide_map,  fps=fps)
+            observable=observable, hide_map=hide_map,  fps=fps, **kw)
         self.controll_type = 'ACC'
         self.agent_drag = 0.02
 
 
 class ColumbusCandyland(ColumbusEnv):
-    def __init__(self, observable=observables.RayObservable(chans=[entities.Reward, entities.Void], num_rays=16, include_rand=True), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.RayObservable(chans=[entities.Reward, entities.Void], num_rays=16, include_rand=True), hide_map=False, fps=30, env_seed=None, **kw):
         super(ColumbusCandyland, self).__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
+            observable=observable,  fps=fps, env_seed=env_seed, **kw)
         self.draw_entities = not hide_map
 
     def setup(self):
@@ -384,17 +386,16 @@ class ColumbusCandyland(ColumbusEnv):
 
 
 class ColumbusCandyland_Aux10(ColumbusCandyland):
-    def __init__(self, fps=30):
-        super(ColumbusCandyland_Aux10, self).__init__(fps=fps)
-        self.aux_reward_max = 10
+    def __init__(self, fps=30, aux_reward_max=10, **kw):
+        super(ColumbusCandyland_Aux10, self).__init__(
+            fps=fps, aux_reward_max=aux_reward_max, **kw)
 
 
 class ColumbusEasyObstacles(ColumbusEnv):
-    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, **kw):
         super(ColumbusEasyObstacles, self).__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -413,11 +414,10 @@ class ColumbusEasyObstacles(ColumbusEnv):
 
 
 class ColumbusEasierObstacles(ColumbusEnv):
-    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.RayObservable(num_rays=16), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, **kw):
         super(ColumbusEasierObstacles, self).__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -437,11 +437,10 @@ class ColumbusEasierObstacles(ColumbusEnv):
 
 
 class ColumbusComp(ColumbusEnv):
-    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, **kw):
         super().__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -457,11 +456,10 @@ class ColumbusComp(ColumbusEnv):
 
 
 class ColumbusSingle(ColumbusEnv):
-    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None):
+    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, **kw):
         super().__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.draw_entities = not hide_map
-        self.aux_reward_max = 10
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -477,10 +475,9 @@ class ColumbusSingle(ColumbusEnv):
 
 
 class ColumbusJustState(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(), fps=30, num_enemies=0, num_rewards=1, env_seed=None):
+    def __init__(self, observable=observables.StateObservable(), fps=30, num_enemies=0, num_rewards=1, env_seed=None, aux_reward_max=10, **kw):
         super(ColumbusJustState, self).__init__(
-            observable=observable,  fps=fps)
-        self.aux_reward_max = 10
+            observable=observable, fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.num_enemies = num_enemies
         self.num_rewards = num_rewards
 
@@ -497,10 +494,9 @@ class ColumbusJustState(ColumbusEnv):
 
 
 class ColumbusStateWithBarriers(ColumbusEnv):
-    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141, num_enemys=0, num_barriers=3):
+    def __init__(self, observable=observables.StateObservable(coordsAgent=True, speedAgent=False, coordsRelativeToAgent=False, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True), fps=30, env_seed=3.141, num_enemys=0, num_barriers=3, aux_reward_max=10, **kw):
         super(ColumbusStateWithBarriers, self).__init__(
-            observable=observable,  fps=fps, env_seed=env_seed)
-        self.aux_reward_max = 10
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
         self.start_pos = (0.5, 0.5)
         self.num_barriers = num_barriers
         self.num_enemys = num_enemys
@@ -522,16 +518,16 @@ class ColumbusStateWithBarriers(ColumbusEnv):
 
 
 class ColumbusTrivialRay(ColumbusStateWithBarriers):
-    def __init__(self, observable=observables.RayObservable(num_rays=8, ray_len=512), hide_map=False, fps=30):
+    def __init__(self, observable=observables.RayObservable(num_rays=8, ray_len=512), hide_map=False, fps=30, **kw):
         super(ColumbusTrivialRay, self).__init__(
-            observable=observable, fps=fps, num_chasers=0)
+            observable=observable, fps=fps, num_chasers=0, **kw)
         self.draw_entities = not hide_map
 
 
 class ColumbusFootball(ColumbusEnv):
-    def __init__(self, observable=observables.RayObservable(num_rays=16, chans=[entities.Goal, entities.Ball, entities.Barrier]), fps=30, walkingOpponent=0, flyingOpponent=0):
+    def __init__(self, observable=observables.RayObservable(num_rays=16, chans=[entities.Goal, entities.Ball, entities.Barrier]), fps=30, walkingOpponent=0, flyingOpponent=0, **kw):
         super(ColumbusFootball, self).__init__(
-            observable=observable, fps=fps, env_seed=None)
+            observable=observable, fps=fps, env_seed=None, **kw)
         self.start_pos = [0.5, 0.5]
         self.score = 0
         self.walkingOpponents = walkingOpponent
