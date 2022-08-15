@@ -273,8 +273,8 @@ class CompositionalObservable(Observable):
         for i, obs in enumerate(self.observables):
             space = obs.get_observation_space()
             num += math.prod(space.shape)
-            low = min(low, float(space.low[0]))
-            high = max(high, float(space.high[0]))
+            low = min(low, float(space.low[0].item()))
+            high = max(high, float(space.high[0].item()))
             if False:
                 if not i:
                     low = space.low
