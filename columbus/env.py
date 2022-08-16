@@ -458,7 +458,7 @@ class ColumbusComp(ColumbusEnv):
 class ColumbusSingle(ColumbusEnv):
     def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, enemy_damage=1, reward_reward=25, void_damage=1, **kw):
         super().__init__(
-            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, void_damage=void_damage**kw)
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, void_damage=void_damage, **kw)
         self.draw_entities = not hide_map
         self._enemy_damage = enemy_damage
         self._reward_reward = reward_reward
