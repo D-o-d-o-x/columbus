@@ -13,7 +13,7 @@ import torch as th
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, aux_reward_max=0, aux_penalty_max=0, reward_mult=1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, aux_reward_max=0, aux_penalty_max=0, void_damage=100):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -33,7 +33,7 @@ class ColumbusEnv(gym.Env):
         self.acc_fac = 0.03/fps*60
         self.die_on_zero = False  # return (/die) when score hist zero
         self.return_on_score = -1  # -1 = never; return, when this score is reached
-        self.reward_mult = reward_mult
+        self.reward_mult = 1
         # 0.01 is a good value, drag with the environment (air / ground)
         self.agent_drag = 0
         self.controll_type = 'SPEED'  # one of SPEED, ACC
@@ -48,7 +48,7 @@ class ColumbusEnv(gym.Env):
         self.draw_confidence_ellipse = True
         # If the Void should be of type Barrier (else it is just of type Void and Entity)
         self.void_barrier = True
-        self.void_damage = 100
+        self.void_damage = void_damage
 
         self.paused = False
         self.keypress_timeout = 0
