@@ -25,10 +25,15 @@ class Entity(object):
         ax, ay = self.acc
         vx, vy = vx+ax*self.env.acc_fac,  vy+ay*self.env.acc_fac
         x, y = x+vx*self.env.speed_fac, y+vy*self.env.speed_fac
-        if x > 1 or x < 0:
-            x, y, vx, vy = self.calc_void_collision(x < 0, x, y, vx, vy)
-        if y > 1 or y < 0:
-            x, y, vx, vy = self.calc_void_collision(2 + (x < 0), x, y, vx, vy)
+        if not self.env.torus_topology:
+            if x > 1 or x < 0:
+                x, y, vx, vy = self.calc_void_collision(x < 0, x, y, vx, vy)
+            if y > 1 or y < 0:
+                x, y, vx, vy = self.calc_void_collision(
+                    2 + (x < 0), x, y, vx, vy)
+        else:
+            x = x % 1
+            y = y % 1
         self.speed = vx/(1+self.drag), vy/(1+self.drag)
         self.pos = x, y
 
@@ -59,10 +64,11 @@ class Entity(object):
         if force_dir_len == 0:
             return
         force_dir = force_dir[0]/force_dir_len, force_dir[1]/force_dir_len
-        if self.env.agent.pos[0] > 0.99 or self.env.agent.pos[0] < 0.01:
-            force_dir = force_dir[0], force_dir[1] * 2
-        if self.env.agent.pos[1] > 0.99 or self.env.agent.pos[1] < 0.01:
-            force_dir = force_dir[0] * 2, force_dir[1]
+        if not self.env.torus_topology:
+            if self.env.agent.pos[0] > 0.99 or self.env.agent.pos[0] < 0.01:
+                force_dir = force_dir[0], force_dir[1] * 2
+            if self.env.agent.pos[1] > 0.99 or self.env.agent.pos[1] < 0.01:
+                force_dir = force_dir[0] * 2, force_dir[1]
         depth *= 1.0*self.movable/(self.movable + other.movable)/2
         depth /= other.elasticity
         force_vec = force_dir[0]*depth/self.env.width, \

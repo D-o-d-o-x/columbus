@@ -13,10 +13,12 @@ import torch as th
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, aux_reward_max=0, aux_penalty_max=0, void_damage=100):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.02, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
+        if not isinstance(observable, observables.Observable):
+            observable = parseObs(observable)
         observable._set_env(self)
         self.observable = observable
         self.title = 'Untitled'
@@ -28,18 +30,21 @@ class ColumbusEnv(gym.Env):
         self.width = 720
         self.height = 720
         self.visible = False
-        self.start_pos = (0.5, 0.5)
-        self.speed_fac = 0.01/fps*60
-        self.acc_fac = 0.03/fps*60
-        self.die_on_zero = False  # return (/die) when score hist zero
-        self.return_on_score = -1  # -1 = never; return, when this score is reached
-        self.reward_mult = 1
+        self.start_pos = start_pos
+        self.speed_fac = speed_fac/fps*60
+        self.acc_fac = acc_fac/fps*60
+        self.die_on_zero = die_on_zero  # return (/die) when score hist zero
+        self.return_on_score = return_on_score  # -1 = Never
+        self.reward_mult = reward_mult
+        self.start_score = start_score
         # 0.01 is a good value, drag with the environment (air / ground)
-        self.agent_drag = 0
-        self.controll_type = 'SPEED'  # one of SPEED, ACC
+        self.agent_drag = agent_drag
+        assert controll_type == 'SPEED' or controll_type == 'ACC'
         self.limit_inp_to_unit_circle = True
+        self.controll_type = controll_type  # one of SPEED, ACC
         self.aux_reward_max = aux_reward_max  # 0 = off
         self.aux_penalty_max = aux_penalty_max  # 0 = off
+        self.aux_reward_discretize = aux_reward_discretize
         # 0 = dont discretize; how many steps (along diagonal)
         self.aux_reward_discretize = 0
         self.draw_observable = True
@@ -47,8 +52,9 @@ class ColumbusEnv(gym.Env):
         self.draw_entities = True
         self.draw_confidence_ellipse = True
         # If the Void should be of type Barrier (else it is just of type Void and Entity)
-        self.void_barrier = True
+        self.void_barrier = void_is_type_barrier
         self.void_damage = void_damage
+        self.torus_topology = torus_topology
 
         self.paused = False
         self.keypress_timeout = 0
@@ -146,10 +152,11 @@ class ColumbusEnv(gym.Env):
         observation = self.observable.get_observation()
         reward, self.new_reward, self.new_abs_reward = self.new_reward / \
             self.fps + self.new_abs_reward, 0, 0
+        if not self.torus_topology:
+            if self.agent.pos[0] < 0.001 or self.agent.pos[0] > 0.999 \
+                    or self.agent.pos[1] < 0.001 or self.agent.pos[1] > 0.999:
+                reward -= self.void_damage/self.fps
         self.score += reward  # aux_reward does not count towards the score
-        if self.agent.pos[0] < 0.001 or self.agent.pos[0] > 0.999 \
-                or self.agent.pos[1] < 0.001 or self.agent.pos[1] > 0.999:
-            reward -= self.void_damage/self.fps
         if self.aux_reward_max:
             reward += self._get_aux_reward()
         done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
@@ -200,7 +207,7 @@ class ColumbusEnv(gym.Env):
         # will get rescaled acording to fps (=reward per second)
         self.new_reward = 0
         self.new_abs_reward = 0  # will not get rescaled. should be used for one-time rewards
-        self.score = 0
+        self.score = self.start_score
         self.entities = []
         self.timers = []
         self.agent = entities.Agent(self)
@@ -248,13 +255,13 @@ class ColumbusEnv(gym.Env):
             # TODO: Is this correct? We try to solve for teh angle from this:
             # R = [[cos, -sin],[sin, cos]]
             # Via only the -sin term.
-            #ang1 = int(math.acos(V[0, 0])/math.pi*360)
+            # ang1 = int(math.acos(V[0, 0])/math.pi*360)
             ang2 = int(math.asin(-V[0, 1])/math.pi*360)
-            #ang3 = int(math.asin(V[1, 0])/math.pi*360)
+            # ang3 = int(math.asin(V[1, 0])/math.pi*360)
             ang = ang2
 
             # print(cov)
-            #print(w, h, (ang1, ang2, ang3))
+            # print(w, h, (ang1, ang2, ang3))
 
             x, y = self.agent.pos
             x, y = x*self.width, y*self.height
@@ -456,7 +463,7 @@ class ColumbusComp(ColumbusEnv):
 
 
 class ColumbusSingle(ColumbusEnv):
-    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None, aux_reward_max=10, enemy_damage=1, reward_reward=25, void_damage=1, **kw):
+    def __init__(self, observable=observables.CompositionalObservable([observables.RayObservable(num_rays=6, chans=[entities.Enemy]), observables.StateObservable(coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=False, include_rand=True)]), hide_map=False, fps=30, env_seed=None, aux_reward_max=1, enemy_damage=1, reward_reward=25, void_damage=1, **kw):
         super().__init__(
             observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, void_damage=void_damage, **kw)
         self.draw_entities = not hide_map
@@ -551,6 +558,63 @@ class ColumbusFootball(ColumbusEnv):
             self.entities.append(entities.FlyingFootballPlayer(self, ball))
 
 
+def parseObs(obsConf):
+    if type(obsConf) == list:
+        obs = []
+        for i, c in enumerate(obsConf):
+            obs.append(parseObs(c))
+        return observables.CompositionalObservable(obs)
+
+    if obsConf['type'] == 'State':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.StateObservable(conf)
+    elif obsConf['type'] == 'RayCast':
+        chans = []
+        for chan in obsConf.get('chans', []):
+            chans.append(getattr(entities, chan))
+        conf = {k: v for k, v in obsConf.items() if k not in ['type', 'chans']}
+        return observables.RayObservable(chans=chans, **conf)
+    elif obsConf['type'] == 'CNN':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.CnnObservable(**conf)
+    else:
+        raise Exception('Unknown Observable selected')
+
+
+class ColumbusConfigDefined(ColumbusEnv):
+    def __init__(self, observable={}, env_seed=None, entities=[], fps=30, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=env_seed, **kw)
+        self.entities_definitions = entities
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i, e in enumerate(self.entities_definitions):
+            Entity = getattr(entities, e['type'])
+            for i in range(e.get('num', 1) + int(self.random()*(0.99+e.get('num_rand', 0)))):
+                entity = Entity(self)
+                conf = {k: v for k, v in e.items() if str(
+                    k) not in ['num', 'num_rand', 'type']}
+
+                for k, v in conf.items():
+                    if k.endswith('_rand'):
+                        n = k.replace('_rand', '')
+                        cur = getattr(
+                            entity, n)
+                        inc = int((v+0.99)*self.random())
+                        setattr(entity, n, cur + inc)
+                    elif k.endswith('_randf'):
+                        n = k.replace('_randf', '')
+                        cur = getattr(
+                            entity, n)
+                        inc = v*self.random()
+                        setattr(entity, n, cur + inc)
+                    else:
+                        setattr(entity, k, v)
+
+                self.entities.append(entity)
+
+
 ###
 register(
     id='ColumbusTestCnn-v0',
@@ -627,5 +691,11 @@ register(
 register(
     id='ColumbusSingle-v0',
     entry_point=ColumbusSingle,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusConfigDefined-v0',
+    entry_point=ColumbusConfigDefined,
     max_episode_steps=30*60*2,
 )

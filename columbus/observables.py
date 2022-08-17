@@ -3,6 +3,7 @@ import numpy as np
 import pygame
 import math
 from columbus import entities
+import torch as th
 
 
 class Observable():
@@ -41,7 +42,7 @@ class CnnObservable(Observable):
 
     def get_observation_space(self):
         return spaces.Box(low=0, high=255,
-                          shape=(self.out_width, self.out_height, 3), dtype=np.uint8)
+                          shape=(self.out_width, self.out_height, 3), dtype=np.float32)
 
     def get_observation(self):
         if not self.env._rendered:
@@ -109,7 +110,7 @@ class RayObservable(Observable):
         for entity in entities_l:
             if isinstance(entity, entity_type) or (self.env.void_barrier and isinstance(entity, entities.Void) and entity_type == entities.Enemy):
                 if isinstance(entity, entities.Void):
-                    if 0 >= pos[0] or pos[0] >= self.env.width or 0 >= pos[1] or pos[1] >= self.env.width:
+                    if not self.env.torus_topology and (0 >= pos[0] or pos[0] >= self.env.width or 0 >= pos[1] or pos[1] >= self.env.width):
                         return True
                 else:
                     if entity.shape != 'circle':
@@ -147,6 +148,8 @@ class RayObservable(Observable):
                     rx, ry = sx + \
                         self.env.agent.pos[0]*self.env.width, sy + \
                         self.env.agent.pos[1]*self.env.height
+                    if self.env.torus_topology:
+                        rx, ry = rx % self.env.width, ry % self.env.height
                     if self._check_collision((rx, ry), entity_type, entities):
                         self.rays[r, c] = (self.num_steps-s)/self.num_steps
                         if self.occlusion:
@@ -162,6 +165,8 @@ class RayObservable(Observable):
                 rx, ry = sx + \
                     self.env.agent.pos[0]*self.env.width, sy + \
                     self.env.agent.pos[1]*self.env.height
+                if self.env.torus_topology:
+                    rx, ry = rx % self.env.width, ry % self.env.height
                 # TODO: How stupid do I want to code?
                 # This instanciates an Object for every Ray-hit,
                 # just to get the color for the visual.
@@ -273,8 +278,11 @@ class CompositionalObservable(Observable):
         for i, obs in enumerate(self.observables):
             space = obs.get_observation_space()
             num += math.prod(space.shape)
-            low = min(low, float(space.low[0].item()))
-            high = max(high, float(space.high[0].item()))
+            try:  # TODO: lol
+                low = min(low, float(space.low[0].item()))
+                high = max(high, float(space.high[0].item()))
+            except:
+                pass
             if False:
                 if not i:
                     low = space.low
@@ -286,9 +294,9 @@ class CompositionalObservable(Observable):
                           shape=(num,), dtype=np.float32)
 
     def get_observation(self):
-        o = [float(point)
-             for obs in self.observables for point in obs.get_observation()]
-        o = np.array(o)
+        o = [th.reshape(th.Tensor(obs.get_observation()), (-1,))
+             for obs in self.observables]
+        o = th.hstack(o)
         return o
 
     def draw(self):
@@ -296,6 +304,6 @@ class CompositionalObservable(Observable):
             obs.draw()
 
     def _set_env(self, env):
-        #self.env = env
+        # self.env = env
         for obs in self.observables:
             obs._set_env(env)
