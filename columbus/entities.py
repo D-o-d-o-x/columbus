@@ -15,9 +15,9 @@ class Entity(object):
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
         self.elasticity = 1
-        self.collision_changes_speed = False
+        self.collision_changes_speed = True
         self._crash_list = []
-        self._coll_add_pushback = 0.05
+        self._coll_add_pushback = 0
 
     def physics_step(self):
         x, y = self.pos

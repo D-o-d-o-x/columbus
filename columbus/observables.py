@@ -9,18 +9,17 @@ import torch as th
 class Observable():
     def __init__(self):
         self.obs = None
-        pass
 
     def _set_env(self, env):
         self.env = env
 
     def get_observation_space():
         print("[!] Using dummyObservable. Env won't output anything")
-        return spaces.Box(low=0, high=255,
-                          shape=(1,), dtype=np.uint8)
+        return spaces.Box(low=0, high=1,
+                          shape=(1,), dtype=np.float32)
 
     def get_observation(self):
-        return False
+        return np.array([0])
 
     def draw(self):
         pass

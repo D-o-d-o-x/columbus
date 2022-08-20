@@ -563,7 +563,10 @@ def parseObs(obsConf):
         obs = []
         for i, c in enumerate(obsConf):
             obs.append(parseObs(c))
-        return observables.CompositionalObservable(obs)
+        if len(obs) == 1:
+            return obs[0]
+        else:
+            return observables.CompositionalObservable(obs)
 
     if obsConf['type'] == 'State':
         conf = {k: v for k, v in obsConf.items() if k not in ['type']}
