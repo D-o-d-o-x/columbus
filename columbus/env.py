@@ -10,6 +10,35 @@ from columbus import entities, observables
 import torch as th
 
 
+def parseObs(obsConf):
+    if type(obsConf) == list:
+        obs = []
+        for i, c in enumerate(obsConf):
+            obs.append(parseObs(c))
+        if len(obs) == 1:
+            return obs[0]
+        else:
+            return observables.CompositionalObservable(obs)
+
+    if obsConf['type'] == 'State':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.StateObservable(conf)
+    elif obsConf['type'] == 'Compass':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.CompassObservable(**conf)
+    elif obsConf['type'] == 'RayCast':
+        chans = []
+        for chan in obsConf.get('chans', []):
+            chans.append(getattr(entities, chan))
+        conf = {k: v for k, v in obsConf.items() if k not in ['type', 'chans']}
+        return observables.RayObservable(chans=chans, **conf)
+    elif obsConf['type'] == 'CNN':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.CnnObservable(**conf)
+    else:
+        raise Exception('Unknown Observable selected')
+
+
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
@@ -527,6 +556,30 @@ class ColumbusStateWithBarriers(ColumbusEnv):
             self.entities.append(reward)
 
 
+class ColumbusCompassWithBarriers(ColumbusEnv):
+    def __init__(self, observable=observables.CompassObservable(coordsRewards=True), fps=30, env_seed=3.141, num_enemys=0, num_barriers=3, aux_reward_max=10, **kw):
+        super().__init__(
+            observable=observable,  fps=fps, env_seed=env_seed, aux_reward_max=aux_reward_max, **kw)
+        self.start_pos = (0.5, 0.5)
+        self.num_barriers = num_barriers
+        self.num_enemys = num_enemys
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(self.num_barriers):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*25+75
+            self.entities.append(enemy)
+        for i in range(self.num_enemys):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = 0.55  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 30
+            self.entities.append(reward)
+
+
 class ColumbusTrivialRay(ColumbusStateWithBarriers):
     def __init__(self, observable=observables.RayObservable(num_rays=8, ray_len=512), hide_map=False, fps=30, **kw):
         super(ColumbusTrivialRay, self).__init__(
@@ -556,32 +609,6 @@ class ColumbusFootball(ColumbusEnv):
             self.entities.append(entities.WalkingFootballPlayer(self, ball))
         for i in range(self.flyingOpponents):
             self.entities.append(entities.FlyingFootballPlayer(self, ball))
-
-
-def parseObs(obsConf):
-    if type(obsConf) == list:
-        obs = []
-        for i, c in enumerate(obsConf):
-            obs.append(parseObs(c))
-        if len(obs) == 1:
-            return obs[0]
-        else:
-            return observables.CompositionalObservable(obs)
-
-    if obsConf['type'] == 'State':
-        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
-        return observables.StateObservable(conf)
-    elif obsConf['type'] == 'RayCast':
-        chans = []
-        for chan in obsConf.get('chans', []):
-            chans.append(getattr(entities, chan))
-        conf = {k: v for k, v in obsConf.items() if k not in ['type', 'chans']}
-        return observables.RayObservable(chans=chans, **conf)
-    elif obsConf['type'] == 'CNN':
-        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
-        return observables.CnnObservable(**conf)
-    else:
-        raise Exception('Unknown Observable selected')
 
 
 class ColumbusConfigDefined(ColumbusEnv):
@@ -670,6 +697,12 @@ register(
 register(
     id='ColumbusStateWithBarriers-v0',
     entry_point=ColumbusStateWithBarriers,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusCompassWithBarriers-v0',
+    entry_point=ColumbusCompassWithBarriers,
     max_episode_steps=30*60*2,
 )
 

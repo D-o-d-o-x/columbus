@@ -265,6 +265,71 @@ class StateObservable(Observable):
                                (x*self.env.width+ofs[1], 0), 1, width=0)
 
 
+class CompassObservable(Observable):
+    def __init__(self, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True):
+        super().__init__()
+        self._entities = None
+        self._timeoutEntities = []
+        self.coordRewards = coordsRewards
+        self.rewardsWhitelist = rewardsWhitelist
+        self.coordsEnemys = coordsEnemys
+        self.enemysWhitelist = enemysWhitelist
+        self.enemysNoBarriers = enemysNoBarriers
+
+    @property
+    def entities(self):
+        if not self._entities == None:
+            return self._entities
+        rewardsWhitelist = self.rewardsWhitelist or self.env.entities
+        enemysWhitelist = self.enemysWhitelist or self.env.entities
+        self._entities = []
+        if self.coordRewards:
+            for entity in rewardsWhitelist:
+                if isinstance(entity, entities.Reward):
+                    self._entities.append(entity)
+        if self.coordsEnemys:
+            for entity in enemysWhitelist:
+                if isinstance(entity, entities.Enemy):
+                    if not self.enemysNoBarriers or not isinstance(entity, entities.Barrier):
+                        self._entities.append(entity)
+        return self._entities
+
+    def get_observation_space(self):
+        self.env.reset()
+        num = len(self.entities)*2
+        return spaces.Box(low=-1, high=1,
+                          shape=(num,), dtype=np.float32)
+
+    def get_observation(self):
+        obs = []
+        for entity in self.entities:
+            dx, dy = entity.pos[0] - \
+                self.env.agent.pos[0], entity.pos[1] - self.env.agent.pos[1]
+            l = math.sqrt(dx**2 + dy**2)*2
+            x, y = math.tanh(dx/l), math.tanh(dy/l)
+            obs.append(x)
+            obs.append(y)
+
+        self.obs = obs
+        return np.array(obs)
+
+    def draw(self):
+        ofs = (0 + self.env.height/2,
+               0 + self.env.width/2)
+        if True:
+            pygame.draw.circle(self.env.screen, self.env.agent.col,
+                               (0, self.env.height/2), 3, width=0)
+            pygame.draw.circle(self.env.screen, self.env.agent.col,
+                               (self.env.width/2, 0), 3, width=0)
+        for i in range(int(len(self.obs)/2)):
+            x, y = self.obs[i*2], self.obs[i*2+1]
+            col = self.entities[i].col
+            pygame.draw.circle(self.env.screen, col,
+                               (0, y*self.env.height+ofs[0]), 1, width=0)
+            pygame.draw.circle(self.env.screen, col,
+                               (x*self.env.width+ofs[1], 0), 1, width=0)
+
+
 class CompositionalObservable(Observable):
     def __init__(self, observables):
         super().__init__()
