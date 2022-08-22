@@ -256,7 +256,7 @@ class StateObservable(Observable):
                                (0, self.env.height/2), 3, width=0)
             pygame.draw.circle(self.env.screen, self.env.agent.col,
                                (self.env.width/2, 0), 3, width=0)
-        for i in range(int(len(self.obs)/2)):
+        for i in range(int(len(self.obs)/2) - self.speedAgent):
             x, y = self.obs[i*2], self.obs[i*2+1]
             col = self.entities[i].col
             pygame.draw.circle(self.env.screen, col,
