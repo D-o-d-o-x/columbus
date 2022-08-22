@@ -192,6 +192,8 @@ class ColumbusEnv(gym.Env):
             1 and self.score > self.return_on_score
         info = {'score': self.score, 'reward': reward}
         self._rendered = False
+        if done:
+            self.reset()
         return observation, reward*self.reward_mult, done, info
 
     def check_collisions_for(self, entity):
@@ -242,7 +244,7 @@ class ColumbusEnv(gym.Env):
         self.agent = entities.Agent(self)
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
-        self.observable._entities = None
+        self.observable.reset()
         return self.observable.get_observation()
 
     def _draw_entities(self):

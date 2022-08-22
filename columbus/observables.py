@@ -24,6 +24,9 @@ class Observable():
     def draw(self):
         pass
 
+    def reset(self):
+        pass
+
 
 class CnnObservable(Observable):
     def __init__(self, in_width=256, in_height=256, out_width=32, out_height=32, draw_width=128, draw_height=128, smooth_scaling=True):
@@ -216,6 +219,9 @@ class StateObservable(Observable):
                     self._timeoutEntities.append(entity)
         return self._entities
 
+    def reset(self):
+        self._entities = None
+
     def get_observation_space(self):
         self.env.reset()
         num = len(self.entities)*2+len(self._timeoutEntities) + \
@@ -363,3 +369,7 @@ class CompositionalObservable(Observable):
         # self.env = env
         for obs in self.observables:
             obs._set_env(env)
+
+    def reset(self):
+        for obs in self.observables:
+            obs.reset()

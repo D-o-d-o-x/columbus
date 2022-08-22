@@ -39,7 +39,6 @@ def chooseEnv():
 
 
 def playEnv(env):
-    env.reset()
     done = False
     while not done:
         t1 = time()
