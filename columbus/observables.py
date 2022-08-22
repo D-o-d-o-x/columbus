@@ -353,8 +353,6 @@ class CompositionalObservable(Observable):
         o = [obs.get_observation().reshape((-1))
              for obs in self.observables]
         o = np.hstack(o)
-        import pdb
-        pdb.set_trace()
         return o
 
     def draw(self):
