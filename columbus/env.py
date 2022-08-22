@@ -22,7 +22,7 @@ def parseObs(obsConf):
 
     if obsConf['type'] == 'State':
         conf = {k: v for k, v in obsConf.items() if k not in ['type']}
-        return observables.StateObservable(conf)
+        return observables.StateObservable(**conf)
     elif obsConf['type'] == 'Compass':
         conf = {k: v for k, v in obsConf.items() if k not in ['type']}
         return observables.CompassObservable(**conf)
