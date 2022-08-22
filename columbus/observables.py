@@ -342,18 +342,12 @@ class CompositionalObservable(Observable):
         for i, obs in enumerate(self.observables):
             space = obs.get_observation_space()
             num += math.prod(space.shape)
-            try:  # TODO: lol
-                low = min(low, float(space.low[0].item()))
-                high = max(high, float(space.high[0].item()))
-            except:
-                pass
-            if False:
-                if not i:
-                    low = space.low
-                    high = space.high
-                else:
-                    low = np.vstack((low, space.low))
-                    high = np.vstack((high, space.high))
+            if not i:
+                low = space.low.reshape((-1))
+                high = space.high.reshape((-1))
+            else:
+                low = np.hstack((low, space.low.reshape((-1))))
+                high = np.hstack((high, space.high.reshape((-1))))
         return spaces.Box(low=low, high=high,
                           shape=(num,), dtype=np.float32)
 
