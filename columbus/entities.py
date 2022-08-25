@@ -15,7 +15,9 @@ class Entity(object):
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
         self.elasticity = 1
-        self.collision_changes_speed = True
+        #self.collision_changes_speed = True
+        self.collision_changes_speed = self.env.controll_type == 'ACC'
+        self.collision_elasticity = self.env.default_collision_elasticity
         self._crash_list = []
         self._coll_add_pushback = 0
 
@@ -80,8 +82,8 @@ class Entity(object):
                 self._coll_add_pushback*self.env.speed_fac
         if self.collision_changes_speed:
             self.speed = self.speed[0] + \
-                force_vec[0]/self.env.speed_fac, self.speed[1] + \
-                force_vec[1]/self.env.speed_fac
+                force_vec[0]*self.collision_elasticity/self.env.speed_fac, self.speed[1] + \
+                force_vec[1]*self.collision_elasticity/self.env.speed_fac
 
     def on_collect(self, other):
         pass
