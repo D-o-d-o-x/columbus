@@ -40,6 +40,7 @@ def chooseEnv():
 
 def playEnv(env):
     done = False
+    env.reset()
     while not done:
         t1 = time()
         env.render()

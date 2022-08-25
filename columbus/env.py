@@ -35,6 +35,9 @@ def parseObs(obsConf):
     elif obsConf['type'] == 'CNN':
         conf = {k: v for k, v in obsConf.items() if k not in ['type']}
         return observables.CnnObservable(**conf)
+    elif obsConf['type'] == 'Dummy':
+        conf = {k: v for k, v in obsConf.items() if k not in ['type']}
+        return observables.Observable(**conf)
     else:
         raise Exception('Unknown Observable selected')
 
@@ -84,6 +87,7 @@ class ColumbusEnv(gym.Env):
         self.void_barrier = void_is_type_barrier
         self.void_damage = void_damage
         self.torus_topology = torus_topology
+        self.default_collision_elasticity = 1
 
         self.paused = False
         self.keypress_timeout = 0

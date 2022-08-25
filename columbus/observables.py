@@ -13,7 +13,7 @@ class Observable():
     def _set_env(self, env):
         self.env = env
 
-    def get_observation_space():
+    def get_observation_space(self):
         print("[!] Using dummyObservable. Env won't output anything")
         return spaces.Box(low=0, high=1,
                           shape=(1,), dtype=np.float32)
@@ -223,7 +223,7 @@ class StateObservable(Observable):
         self._entities = None
 
     def get_observation_space(self):
-        self.env.reset()
+        self.reset()
         num = len(self.entities)*2+len(self._timeoutEntities) + \
             self.speedAgent*2 + self.include_rand
         return spaces.Box(low=0-1*self.coordsRelativeToAgent, high=1,
@@ -366,7 +366,6 @@ class CompositionalObservable(Observable):
             obs.draw()
 
     def _set_env(self, env):
-        # self.env = env
         for obs in self.observables:
             obs._set_env(env)
 
