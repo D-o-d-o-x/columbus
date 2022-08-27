@@ -77,7 +77,6 @@ class Entity(object):
             force_dir[1]*depth/self.env.height
         if sum([abs(f) for f in force_vec]) > 0.005:
             self.pos = self.pos[0] + force_vec[0], self.pos[1] + force_vec[1]
-            print('#########################')
             if self._coll_add_pushback:
                 self.pos = self.pos[0] - self.env.inp[0]*self._coll_add_pushback * \
                     self.env.speed_fac, self.pos[1] - self.env.inp[1] * \
