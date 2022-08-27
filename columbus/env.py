@@ -95,8 +95,12 @@ class ColumbusEnv(gym.Env):
         self.rng = random_dont_use.Random()
         self._seed(self.env_seed)
 
+        self._init = False
+
     @property
     def observation_space(self):
+        if not self._init:
+            self.reset()
         return self.observable.get_observation_space()
 
     def _seed(self, seed):
@@ -170,7 +174,8 @@ class ColumbusEnv(gym.Env):
         return aux_reward/self.fps
 
     def step(self, action):
-        # TODO: Just make the range consistent...
+        if not self._init:
+            self.reset()
         inp = (action[0]+1)/2, (action[1]+1)/2
         if self._disturb_next:
             inp = self._disturb_next
@@ -235,6 +240,7 @@ class ColumbusEnv(gym.Env):
 
     def reset(self):
         pygame.init()
+        self._init = True
         self._seed(self.env_seed)
         self._rendered = False
         self._disturb_next = False
@@ -654,7 +660,7 @@ class ColumbusConfigDefined(ColumbusEnv):
 class ColumbusBlub(ColumbusEnv):
     def __init__(self, observable=observables.Observable(), env_seed=None, entities=[], fps=30, **kw):
         super().__init__(
-            observable=observable, fps=fps, env_seed=env_seed, default_collision_elasticity=0.9, speed_fac=0.01, acc_fac=0.1, agent_drag=0.05, controll_type='ACC')
+            observable=observable, fps=fps, env_seed=env_seed, default_collision_elasticity=0.8, speed_fac=0.01, acc_fac=0.1, agent_drag=0.06, controll_type='ACC')
 
     def setup(self):
         self.agent.pos = self.start_pos
@@ -664,7 +670,7 @@ class ColumbusBlub(ColumbusEnv):
             self.entities.append(enemy)
         for i in range(1):
             reward = entities.TeleportingReward(self)
-            reward.radius = 100
+            reward.radius = 20
             self.entities.append(reward)
 
 
