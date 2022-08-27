@@ -651,7 +651,31 @@ class ColumbusConfigDefined(ColumbusEnv):
                 self.entities.append(entity)
 
 
+class ColumbusBlub(ColumbusEnv):
+    def __init__(self, observable=observables.Observable(), env_seed=None, entities=[], fps=30, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=env_seed, default_collision_elasticity=0.9, speed_fac=0.01, acc_fac=0.1, agent_drag=0.05, controll_type='ACC')
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(10):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*25+75
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            reward.radius = 100
+            self.entities.append(reward)
+
+
 ###
+register(
+    id='ColumbusBlub-v0',
+    entry_point=ColumbusBlub,
+    max_episode_steps=30*60*2,
+)
+
+
 register(
     id='ColumbusTestCnn-v0',
     entry_point=ColumbusTest3_1,

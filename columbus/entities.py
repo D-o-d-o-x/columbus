@@ -94,10 +94,10 @@ class Entity(object):
     def calc_void_collision(self, dir, x, y, vx, vy):
         if dir < 2:
             x = min(max(x, 0), 1)
-            vx = 0
+            vx = -vx*self.collision_elasticity*0.5*self.collision_changes_speed
         else:
             y = min(max(y, 0), 1)
-            vy = 0
+            vy = -vy*self.collision_elasticity*0.5*self.collision_changes_speed
         return x, y, vx, vy
 
     def kill(self):
