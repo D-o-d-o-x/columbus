@@ -301,10 +301,13 @@ class CompassObservable(Observable):
         return self._entities
 
     def get_observation_space(self):
-        self.env.reset()
+        self.reset()
         num = len(self.entities)*2
         return spaces.Box(low=-1, high=1,
                           shape=(num,), dtype=np.float32)
+
+    def reset(self):
+        self._entities = None
 
     def get_observation(self):
         obs = []
