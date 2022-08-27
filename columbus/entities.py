@@ -75,11 +75,13 @@ class Entity(object):
         depth /= other.elasticity
         force_vec = force_dir[0]*depth/self.env.width, \
             force_dir[1]*depth/self.env.height
-        self.pos = self.pos[0] + force_vec[0], self.pos[1] + force_vec[1]
-        if self._coll_add_pushback:
-            self.pos = self.pos[0] - self.env.inp[0]*self._coll_add_pushback * \
-                self.env.speed_fac, self.pos[1] - self.env.inp[1] * \
-                self._coll_add_pushback*self.env.speed_fac
+        if sum([abs(f) for f in force_vec]) > 0.005:
+            self.pos = self.pos[0] + force_vec[0], self.pos[1] + force_vec[1]
+            print('#########################')
+            if self._coll_add_pushback:
+                self.pos = self.pos[0] - self.env.inp[0]*self._coll_add_pushback * \
+                    self.env.speed_fac, self.pos[1] - self.env.inp[1] * \
+                    self._coll_add_pushback*self.env.speed_fac
         if self.collision_changes_speed:
             self.speed = self.speed[0] + \
                 force_vec[0]*self.collision_elasticity/self.env.speed_fac, self.speed[1] + \
