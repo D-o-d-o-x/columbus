@@ -111,7 +111,7 @@ class ColumbusEnv(gym.Env):
 
     def _seed(self, seed):
         if seed == None:
-            seed = self._master_rng()
+            seed = self._master_rng.random()
         self.rng.seed(seed)
 
     def random(self):
