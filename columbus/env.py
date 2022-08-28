@@ -45,7 +45,7 @@ def parseObs(obsConf):
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.02, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.02, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -92,6 +92,12 @@ class ColumbusEnv(gym.Env):
         self.paused = False
         self.keypress_timeout = 0
         self.can_accept_chol = True
+        self._master_rng = random_dont_use.Random()
+        if master_seed == None:
+            master_seed = urandom(12)
+        if master_seed == 'numpy':
+            master_seed = np.random.rand()
+        self._master_rng.seed(master_seed)
         self.rng = random_dont_use.Random()
         self._seed(self.env_seed)
 
@@ -105,7 +111,7 @@ class ColumbusEnv(gym.Env):
 
     def _seed(self, seed):
         if seed == None:
-            seed = urandom(12)
+            seed = self._master_rng()
         self.rng.seed(seed)
 
     def random(self):
@@ -671,6 +677,7 @@ class ColumbusBlub(ColumbusEnv):
         for i in range(1):
             reward = entities.TeleportingReward(self)
             reward.radius = 20
+            reward.reward = 25
             self.entities.append(reward)
 
 
