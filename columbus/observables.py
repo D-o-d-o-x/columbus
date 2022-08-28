@@ -139,7 +139,7 @@ class RayObservable(Observable):
         self.rays = np.zeros((self.num_rays+self.include_rand, self.num_chans))
         if self.include_rand:
             for c in range(self.num_chans):
-                self.rays[-1, c] = self.env.random()
+                self.rays[-1, c] = np.random.rand()
         for r, (hx, hy) in enumerate(self._get_ray_heads()):
             occ_dist = self.num_steps
             for c, entity_type in enumerate(self.chans):
@@ -250,7 +250,7 @@ class StateObservable(Observable):
             obs.append(self.env.agent.speed[0])
             obs.append(self.env.agent.speed[1])
         if self.include_rand:
-            obs.append(self.env.random())
+            obs.append(np.random.rand())
         self.obs = obs
         return np.array(obs)
 
