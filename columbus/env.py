@@ -417,7 +417,7 @@ class ColumbusTest3_1(ColumbusEnv):
 
 
 class ColumbusTestRect(ColumbusEnv):
-    def __init__(self, observable=observables.Observable(), fps=30, aux_reward_max=1, **kw):
+    def __init__(self, observable=observables.RayObservable(), fps=30, aux_reward_max=1, **kw):
         super().__init__(
             observable=observable, fps=fps, env_seed=3.3, aux_reward_max=aux_reward_max, controll_type='ACC', **kw)
         self.start_pos = [0.5, 0.5]
