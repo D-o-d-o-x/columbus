@@ -4,14 +4,13 @@ import math
 
 class Entity(object):
     def __init__(self, env):
+        self.shape = None
         self.env = env
         self.pos = (env.random(), env.random())
         self.speed = (0, 0)
         self.acc = (0, 0)
         self.drag = 0
-        self.radius = 10
         self.col = (255, 255, 255)
-        self.shape = 'circle'
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
         self.elasticity = 1
@@ -48,9 +47,8 @@ class Entity(object):
         self._crash_list = []
 
     def draw(self):
-        x, y = self.pos
-        pygame.draw.circle(self.env.surface, self.col,
-                           (x*self.env.width, y*self.env.height), self.radius, width=0)
+        raise Exception(
+            '[!] draw not implemented for shape "'+str(self.shape)+'"')
 
     def on_collision(self, other, depth):
         if self.solid and other.solid:
@@ -61,7 +59,8 @@ class Entity(object):
         if other in self._crash_list:
             return
         self._crash_list.append(other)
-        force_dir = self.pos[0] - other.pos[0], self.pos[1] - other.pos[1]
+        force_dir = self._get_crash_force_dir(other)
+        print(force_dir, depth)
         force_dir_len = math.sqrt(force_dir[0]**2+force_dir[1]**2)
         if force_dir_len == 0:
             return
@@ -82,9 +81,19 @@ class Entity(object):
                     self.env.speed_fac, self.pos[1] - self.env.inp[1] * \
                     self._coll_add_pushback*self.env.speed_fac
         if self.collision_changes_speed:
+            oldspeed = math.sqrt(self.speed[0]**2+self.speed[1]**2)
             self.speed = self.speed[0] + \
                 force_vec[0]*self.collision_elasticity/self.env.speed_fac, self.speed[1] + \
                 force_vec[1]*self.collision_elasticity/self.env.speed_fac
+            newspeed = math.sqrt(self.speed[0]**2+self.speed[1]**2)
+            if newspeed > oldspeed*1.1:
+                self.speed = self.speed[0]/newspeed*1.1 * \
+                    oldspeed, self.speed[1]/newspeed*oldspeed*1.1
+
+    def _get_crash_force_dir(self, other):
+        if 1 == 1:  # linter hack
+            raise Exception(
+                '[!] No collision-logic implemented for shape"'+str(self.shape)+'"')
 
     def on_collect(self, other):
         pass
@@ -105,7 +114,94 @@ class Entity(object):
         self.env.kill_entity(self)
 
 
-class Agent(Entity):
+class CircularEntity(Entity):
+    def __init__(self, env):
+        super().__init__(env)
+        self.shape = 'circle'
+        self.radius = 10
+
+    def draw(self):
+        x, y = self.pos
+        pygame.draw.circle(self.env.surface, self.col,
+                           (x*self.env.width, y*self.env.height), self.radius, width=0)
+
+    def _get_crash_force_dir(self, other):
+        if other.shape == 'circle':
+            return self.pos[0] - other.pos[0], self.pos[1] - other.pos[1]
+        elif other.shape == 'rect':
+            pad = 0
+            edge_size = min(self.radius, min(
+                other.width/3, other.height/3)) + 1
+
+            x, y = self.pos
+            x, y = x*self.env.height, y*self.env.width
+            left, top = x - self.radius + pad, y - self.radius + pad
+            right, bottom = x + self.radius - pad, y + self.radius - pad
+            lrcenter, tbcenter = x, y
+
+            ox, oy = other.pos
+            ox, oy = ox*self.env.height, oy*self.env.width
+            oleft, otop = ox + pad, oy + pad
+            oright, obottom = ox + other.width - pad, oy + other.height - pad
+            olrcenter, otbcenter = ox + other.width/2, oy + other.height/2
+
+            lr, tb = 0, 0
+
+            if otop < bottom and obottom > bottom:
+                # col from top
+                tb = otop - bottom
+                #print('t', tb)
+            elif top < obottom and top > otop:
+                # col from bottom
+                tb = - top + obottom
+                #print('b', tb)
+
+            if right > oleft and right < oright:
+                # col from left
+                lr = oleft - right
+                #print('l', lr)
+            elif left < oright and left > oleft:
+                # col from right
+                lr = - left + oright
+                #print('r', lr)
+
+            if lr != 0 and tb != 0:
+                if abs(abs(tb) - abs(lr)) < edge_size:
+                    if abs(tb) < abs(lr):
+                        return lr/5, tb
+                    else:
+                        return lr, tb/5
+                if abs(tb) < abs(lr):
+                    return 0, tb
+                else:
+                    return lr, 0
+
+            return 0, 0
+        else:
+            raise Exception(
+                '[!] Shape "circle" does not know how to collide with shape "'+str(other.shape)+'"')
+
+
+class RectangularEntity(Entity):
+    def __init__(self, env):
+        super().__init__(env)
+        self.shape = 'rect'
+        self.width = 10
+        self.height = 10
+
+    def draw(self):
+        x, y = self.pos
+        rect = pygame.Rect(x*self.env.width, y *
+                           self.env.width, self.width, self.height)
+        pygame.draw.rect(self.env.surface, self.col,
+                         rect, width=0)
+
+    def _get_crash_force_dir(self, other):
+        raise Exception(
+            '[!] Collisions in this direction not implemented for shape "rectangle"')
+
+
+class Agent(CircularEntity):
     def __init__(self, env):
         super(Agent, self).__init__(env)
         self.pos = (0.5, 0.5)
@@ -148,12 +244,17 @@ class Barrier(Enemy):
         self.movable = False
 
 
-class CircleBarrier(Barrier):
+class CircleBarrier(Barrier, CircularEntity):
     def __init__(self, env):
         super(CircleBarrier, self).__init__(env)
 
 
-class Chaser(Enemy):
+class RectBarrier(Barrier, RectangularEntity):
+    def __init__(self, env):
+        super().__init__(env)
+
+
+class Chaser(Enemy, CircularEntity):
     def __init__(self, env):
         super(Chaser, self).__init__(env)
         self.target = self.env.agent
@@ -193,7 +294,7 @@ class FlyingChaser(Chaser):
         self.acc = arrow[0] * self.chase_acc, arrow[1] * self.chase_acc
 
 
-class Collectable(Entity):
+class Collectable(CircularEntity):
     def __init__(self, env):
         super(Collectable, self).__init__(env)
         self.avaible = True
@@ -271,7 +372,7 @@ class TimeoutReward(OnceReward):
             self.env.timers.append((self.timeout, self.set_avaible, True))
 
 
-class Ball(Entity):
+class Ball(CircularEntity):
     def __init__(self, env):
         super(Ball, self).__init__(env)
         self.col = (255, 128, 0)

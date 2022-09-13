@@ -45,7 +45,7 @@ def parseObs(obsConf):
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.02, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -79,6 +79,7 @@ class ColumbusEnv(gym.Env):
         self.aux_reward_discretize = aux_reward_discretize
         # 0 = dont discretize; how many steps (along diagonal)
         self.aux_reward_discretize = 0
+        self.penalty_from_edges = False
         self.draw_observable = True
         self.draw_joystick = True
         self.draw_entities = True
@@ -169,8 +170,13 @@ class ColumbusEnv(gym.Env):
                     aux_reward += reward
             elif isinstance(entity, entities.Enemy):
                 if entity.radiateDamage:
-                    penalty = self.aux_penalty_max / \
-                        (1 + self.sq_dist(entity.pos, self.agent.pos))
+                    if self.penalty_from_edges:
+                        penalty = self.aux_penalty_max / \
+                            (1 + self.sq_dist(entity.pos,
+                             self.agent.pos) - entity.radius - self.agent.redius)
+                    else:
+                        penalty = self.aux_penalty_max / \
+                            (1 + self.sq_dist(entity.pos, self.agent.pos))
 
                     if self.aux_reward_discretize:
                         penalty = int(penalty*self.aux_reward_discretize*2) / \
@@ -220,12 +226,16 @@ class ColumbusEnv(gym.Env):
                     other.on_collision(entity, depth)
 
     def _check_collision_between(self, e1, e2):
+        e = [e1, e2]
+        e.sort(key=lambda x: x.shape)
+        e1, e2 = e
         shapes = [e1.shape, e2.shape]
-        shapes.sort()
         if shapes == ['circle', 'circle']:
             dist = math.sqrt(((e1.pos[0]-e2.pos[0])*self.width) ** 2
                              + ((e1.pos[1]-e2.pos[1])*self.height)**2)
             return max(0, e1.radius + e2.radius - dist)
+        elif shapes == ['circle', 'rect']:
+            return sum([abs(d) for d in e1._get_crash_force_dir(e2)])
         else:
             raise Exception(
                 'Checking for collision between unsupported shapes: '+str(shapes))
@@ -406,6 +416,29 @@ class ColumbusTest3_1(ColumbusEnv):
             self.entities.append(reward)
 
 
+class ColumbusTestRect(ColumbusEnv):
+    def __init__(self, observable=observables.Observable(), fps=30, aux_reward_max=1, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=3.3, aux_reward_max=aux_reward_max, controll_type='ACC', **kw)
+        self.start_pos = [0.5, 0.5]
+        self.score = 0
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(1):
+            enemy = entities.RectBarrier(self)
+            enemy.width = self.random()*40+50
+            enemy.height = self.random()*40+50
+            self.entities.append(enemy)
+        for i in range(1):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*40+50
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            self.entities.append(reward)
+
+
 class ColumbusTestRay(ColumbusTest3_1):
     def __init__(self, observable=observables.RayObservable(), hide_map=False, fps=30, **kw):
         super(ColumbusTestRay, self).__init__(
@@ -419,6 +452,74 @@ class ColumbusRayDrone(ColumbusTestRay):
             observable=observable, hide_map=hide_map,  fps=fps, **kw)
         self.controll_type = 'ACC'
         self.agent_drag = 0.02
+
+
+class ColumbusDemoEnv3_1(ColumbusEnv):
+    def __init__(self, observable=observables.Observable(), fps=30, aux_reward_max=1, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=3.1, aux_reward_max=aux_reward_max, controll_type='ACC', agent_drag=0.05, **kw)
+        self.start_pos = [0.6, 0.3]
+        self.score = 0
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(18):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*40+50
+            self.entities.append(enemy)
+        for i in range(0):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = self.random()*0.4*0.3  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            self.entities.append(reward)
+
+
+class ColumbusDemoEnv2_7(ColumbusEnv):
+    def __init__(self, observable=observables.Observable(), fps=30, aux_reward_max=1, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=2.7, aux_reward_max=aux_reward_max, controll_type='ACC', agent_drag=0.05, **kw)
+        self.start_pos = [0.6, 0.3]
+        self.score = 0
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(12):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*30+40
+            self.entities.append(enemy)
+        for i in range(3):
+            enemy = entities.FlyingChaser(self)
+            enemy.chase_acc = self.random()*0.4*0.3  # *0.6+0.5
+            self.entities.append(enemy)
+        for i in range(1):
+            reward = entities.TeleportingReward(self)
+            self.entities.append(reward)
+
+
+class ColumbusDemoEnvFootball(ColumbusEnv):
+    def __init__(self, observable=observables.Observable(), fps=30, walkingOpponent=0, flyingOpponent=0, **kw):
+        super().__init__(
+            observable=observable, fps=fps, env_seed=1.23, **kw)
+        self.start_pos = [0.5, 0.5]
+        self.score = 0
+        self.walkingOpponents = walkingOpponent
+        self.flyingOpponents = flyingOpponent
+
+    def setup(self):
+        self.agent.pos = self.start_pos
+        for i in range(8):
+            enemy = entities.CircleBarrier(self)
+            enemy.radius = self.random()*40+50
+            self.entities.append(enemy)
+        ball = entities.Ball(self)
+        self.entities.append(ball)
+        self.entities.append(entities.TeleportingGoal(self))
+        for i in range(self.walkingOpponents):
+            self.entities.append(entities.WalkingFootballPlayer(self, ball))
+        for i in range(self.flyingOpponents):
+            self.entities.append(entities.FlyingFootballPlayer(self, ball))
 
 
 class ColumbusCandyland(ColumbusEnv):
@@ -664,7 +765,7 @@ class ColumbusConfigDefined(ColumbusEnv):
 
 
 class ColumbusBlub(ColumbusEnv):
-    def __init__(self, observable=observables.Observable(), env_seed=None, entities=[], fps=30, **kw):
+    def __init__(self, observable=observables.CompositionalObservable([observables.StateObservable(), observables.RayObservable(num_rays=6, chans=[entities.Enemy])]), env_seed=None, entities=[], fps=30, **kw):
         super().__init__(
             observable=observable, fps=fps, env_seed=env_seed, default_collision_elasticity=0.8, speed_fac=0.01, acc_fac=0.1, agent_drag=0.06, controll_type='ACC')
 
@@ -682,11 +783,11 @@ class ColumbusBlub(ColumbusEnv):
 
 
 ###
-register(
-    id='ColumbusBlub-v0',
-    entry_point=ColumbusBlub,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusBlub-v0',
+#    entry_point=ColumbusBlub,
+#    max_episode_steps=30*60*2,
+# )
 
 
 register(
@@ -701,41 +802,41 @@ register(
     max_episode_steps=30*60*2,
 )
 
-register(
-    id='ColumbusRayDrone-v0',
-    entry_point=ColumbusRayDrone,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusRayDrone-v0',
+#    entry_point=ColumbusRayDrone,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusCandyland-v0',
-    entry_point=ColumbusCandyland,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusCandyland-v0',
+#    entry_point=ColumbusCandyland,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusCandyland_Aux10-v0',
-    entry_point=ColumbusCandyland_Aux10,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusCandyland_Aux10-v0',
+#    entry_point=ColumbusCandyland_Aux10,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusEasyObstacles-v0',
-    entry_point=ColumbusEasyObstacles,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusEasyObstacles-v0',
+#    entry_point=ColumbusEasyObstacles,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusEasierObstacles-v0',
-    entry_point=ColumbusEasyObstacles,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusEasierObstacles-v0',
+#    entry_point=ColumbusEasyObstacles,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusJustState-v0',
-    entry_point=ColumbusJustState,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusJustState-v0',
+#    entry_point=ColumbusJustState,
+#    max_episode_steps=30*60*2,
+# )
 
 register(
     id='ColumbusStateWithBarriers-v0',
@@ -743,38 +844,54 @@ register(
     max_episode_steps=30*60*2,
 )
 
-register(
-    id='ColumbusCompassWithBarriers-v0',
-    entry_point=ColumbusCompassWithBarriers,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusCompassWithBarriers-v0',
+#    entry_point=ColumbusCompassWithBarriers,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusTrivialRay-v0',
-    entry_point=ColumbusTrivialRay,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusTrivialRay-v0',
+#    entry_point=ColumbusTrivialRay,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusFootball-v0',
-    entry_point=ColumbusFootball,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusFootball-v0',
+#    entry_point=ColumbusFootball,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusComb-v0',
-    entry_point=ColumbusComp,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusComb-v0',
+#    entry_point=ColumbusComp,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusSingle-v0',
-    entry_point=ColumbusSingle,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusSingle-v0',
+#    entry_point=ColumbusSingle,
+#    max_episode_steps=30*60*2,
+# )
 
 register(
     id='ColumbusConfigDefined-v0',
     entry_point=ColumbusConfigDefined,
+    max_episode_steps=30*60*2,
+)
+
+register(
+    id='ColumbusDemoEnvFootball-v0',
+    entry_point=ColumbusDemoEnvFootball,
+    max_episode_steps=30*60*2,
+)
+register(
+    id='ColumbusDemoEnv3_1-v0',
+    entry_point=ColumbusDemoEnv3_1,
+    max_episode_steps=30*60*2,
+)
+register(
+    id='ColumbusDemoEnv2_7-v0',
+    entry_point=ColumbusDemoEnv2_7,
     max_episode_steps=30*60*2,
 )

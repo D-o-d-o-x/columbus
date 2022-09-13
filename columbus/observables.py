@@ -48,7 +48,7 @@ class CnnObservable(Observable):
 
     def get_observation(self):
         if not self.env._rendered:
-            self.env.render(dont_show=True)
+            self.env.render(mode='internal', dont_show=False)
         self.env._ensure_surface()
         x, y = self.env.agent.pos[0]*self.env.width - self.in_width / \
             2, self.env.agent.pos[1]*self.env.height - self.in_height/2
