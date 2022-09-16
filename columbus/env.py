@@ -294,6 +294,9 @@ class ColumbusEnv(gym.Env):
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
     def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=1):
+        # The 'seconds'-parameter only really makes sense, when using control_type='SPEED',
+        # you can still use it to scale the cov-ellipse when using control_type='ACC',
+        # but it's relation to 'seconds' is no longer there...
         if self.draw_confidence_ellipse and (self.visible or forceDraw):
             col = (255, 255, 255)
             f = seconds/self.speed_fac
