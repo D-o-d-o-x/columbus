@@ -309,9 +309,13 @@ class ColumbusEnv(gym.Env):
             L, V = th.linalg.eig(cov)
             L, V = L.real, V.real
             w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
-            # TODO: Is this correct? We try to solve for teh angle from this:
+            # In theory we would ahve to solve:
             # R = [[cos, -sin],[sin, cos]]
-            # Via only the -sin term.
+            # But we only use the -sin term.
+            # Because of this our calculated angle might be wrong
+            # by periods of 180°
+            # But since an ellipsoid does not change under such an 'error',
+            # we don't care
             # ang1 = int(math.acos(V[0, 0])/math.pi*360)
             ang2 = int(math.asin(-V[0, 1])/math.pi*360)
             # ang3 = int(math.asin(V[1, 0])/math.pi*360)

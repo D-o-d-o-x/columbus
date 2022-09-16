@@ -29,6 +29,7 @@ class Observable():
 
 
 class CnnObservable(Observable):
+    # Currently broken...
     def __init__(self, in_width=256, in_height=256, out_width=32, out_height=32, draw_width=128, draw_height=128, smooth_scaling=True):
         super(CnnObservable, self).__init__()
         self.in_width = in_width
@@ -195,6 +196,7 @@ class RayObservable(Observable):
 
 
 class StateObservable(Observable):
+    # Whitelists probably don't work...
     def __init__(self, coordsAgent=False, speedAgent=False, coordsRelativeToAgent=True, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=True, enemysWhitelist=None, enemysNoBarriers=True, rewardsTimeouts=True, include_rand=True):
         super(StateObservable, self).__init__()
         self._entities = None
@@ -287,6 +289,9 @@ class StateObservable(Observable):
 
 
 class CompassObservable(Observable):
+    # Usefull for navigation close to an reward.
+    # Works like the StateObservable, but we assign a bigger range of possible input values to those, that are close to zero.
+    # I found that Agents without such an Observable often moved close to a reward and then just jiggled arround, adding a CompassObservable fixes this
     def __init__(self, coordsRewards=True, rewardsWhitelist=None, coordsEnemys=False, enemysWhitelist=None, enemysNoBarriers=True):
         super().__init__()
         self._entities = None
@@ -355,6 +360,8 @@ class CompassObservable(Observable):
 
 
 class CompositionalObservable(Observable):
+    # Used whenever you want to attach multiple Observables to an Env.
+    # We currently flatten the outputs of all attached Observables, so using a CNN though an CompositionalObservable would lead to problems.
     def __init__(self, observables):
         super().__init__()
         self.observables = observables

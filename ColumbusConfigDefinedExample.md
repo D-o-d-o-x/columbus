@@ -1,0 +1,45 @@
+    env_args:
+      observable:
+        - type: State
+          coordsAgent: True
+          speedAgent: True
+          coordsRelativeToAgent: False
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: State
+          coordsAgent: False
+          speedAgent: False
+          coordsRelativeToAgent: True
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: Compass
+        - type: RayCast
+          num_rays: 8
+          chans: [Enemy]
+      entities:
+        - type: CircleBarrier
+          num: 8
+          num_rand: 6
+          damage: 20
+          radius: 25
+          radius_rand: 75
+        - type: TeleportingReward
+          num: 1
+          reward: 100
+          radius: 20
+      default_collision_elasticity: 0.8
+      start_score: 50
+      speed_fac: 0.01
+      acc_fac: 0.1
+      die_on_zero: True
+      agent_drag: 0.07
+      controll_type: ACC
+      aux_reward_max: 1
+      aux_penalty_max: 0.1
+      void_damage: 5
