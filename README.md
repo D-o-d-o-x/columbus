@@ -42,10 +42,14 @@ Contains all implemented entities (e.g. the Agent, Rewards and Enemies)
 
 Contains all 'oberservables'. These are attached to envs to define what kind of output is given to the agent. This way environments can be designed independently from the observation machanism that is used by the agent to play it.
 
+##### Some caveats
+
+- CNNObservable seems to be broken currently. (Fixing it is also no priority for me)
+
 ### humanPlayer.py
 
 Allows environments to be played by a human using mouse input.
 
 ##### Some caveats
 
-- CNNObservable seems to be broken currently. (Fixing it is also no priority for me)
+- Does not yet work for ColumbusConfigDefined...
