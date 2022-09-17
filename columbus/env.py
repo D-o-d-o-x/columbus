@@ -312,7 +312,7 @@ class ColumbusEnv(gym.Env):
             L, V = th.linalg.eig(cov)
             L, V = L.real, V.real
             w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
-            # In theory we would ahve to solve:
+            # In theory we would have to solve:
             # R = [[cos, -sin],[sin, cos]]
             # But we only use the -sin term.
             # Because of this our calculated angle might be wrong

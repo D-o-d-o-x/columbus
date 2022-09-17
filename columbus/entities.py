@@ -60,7 +60,7 @@ class Entity(object):
             return
         self._crash_list.append(other)
         force_dir = self._get_crash_force_dir(other)
-        print(force_dir, depth)
+        #print(force_dir, depth)
         force_dir_len = math.sqrt(force_dir[0]**2+force_dir[1]**2)
         if force_dir_len == 0:
             return
