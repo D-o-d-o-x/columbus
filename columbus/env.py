@@ -45,7 +45,7 @@ def parseObs(obsConf):
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -89,6 +89,8 @@ class ColumbusEnv(gym.Env):
         self.void_damage = void_damage
         self.torus_topology = torus_topology
         self.default_collision_elasticity = default_collision_elasticity
+        self.terminate_on_reward = terminate_on_reward
+        self.agent_draw_path = agent_draw_path
 
         self.paused = False
         self.keypress_timeout = 0
@@ -121,6 +123,8 @@ class ColumbusEnv(gym.Env):
     def _ensure_surface(self):
         if not self.surface or not self.screen:
             self.surface = pygame.Surface((self.width, self.height))
+            self.path_overlay = pygame.Surface(
+                (self.width, self.height), pygame.SRCALPHA, 32)
             if self.visible:
                 self.screen = pygame.display.set_mode(
                     (self.width, self.height))
@@ -200,6 +204,7 @@ class ColumbusEnv(gym.Env):
             self._step_timers()
             self._step_entities()
         observation = self.observable.get_observation()
+        gotRew = self.new_reward > 0 or self.new_abs_reward > 0
         reward, self.new_reward, self.new_abs_reward = self.new_reward / \
             self.fps + self.new_abs_reward, 0, 0
         if not self.torus_topology:
@@ -210,7 +215,7 @@ class ColumbusEnv(gym.Env):
         if self.aux_reward_max:
             reward += self._get_aux_reward()
         done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
-            1 and self.score > self.return_on_score
+            1 and self.score > self.return_on_score or self.terminate_on_reward and gotRew
         info = {'score': self.score, 'reward': reward}
         self._rendered = False
         if done:
@@ -268,6 +273,7 @@ class ColumbusEnv(gym.Env):
         self.entities = []
         self.timers = []
         self.agent = entities.Agent(self)
+        self.agent.draw_path = self.agent_draw_path
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
         self.observable.reset()
@@ -384,6 +390,7 @@ class ColumbusEnv(gym.Env):
         if mode == 'human' and dont_show:
             return
         self.screen.blit(self.surface, (0, 0))
+        self.screen.blit(self.path_overlay, (0, 0))
         self._draw_observable(forceDraw=mode != 'human')
         self._draw_joystick(forceDraw=mode != 'human')
         if chol != None:
