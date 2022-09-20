@@ -3,10 +3,16 @@ import math
 
 
 class Entity(object):
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        obj.__post_init__()
+        return obj
+
     def __init__(self, env):
         self.shape = None
         self.env = env
         self.pos = (env.random(), env.random())
+        self.last_pos = None
         self.speed = (0, 0)
         self.acc = (0, 0)
         self.drag = 0
@@ -14,13 +20,20 @@ class Entity(object):
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
         self.elasticity = 1
-        #self.collision_changes_speed = True
         self.collision_changes_speed = self.env.controll_type == 'ACC'
         self.collision_elasticity = self.env.default_collision_elasticity
         self._crash_list = []
         self._coll_add_pushback = 0
+        self.crash_conservation_of_energy = True
+        self.draw_path = False
+        self.draw_path_col = (55, 55, 55)
+        self.draw_path_width = 2
+
+    def __post_init__(self):
+        pass
 
     def physics_step(self):
+        self.last_pos = self.pos[0], self.pos[1]
         x, y = self.pos
         vx, vy = self.speed
         ax, ay = self.acc
@@ -47,8 +60,9 @@ class Entity(object):
         self._crash_list = []
 
     def draw(self):
-        raise Exception(
-            '[!] draw not implemented for shape "'+str(self.shape)+'"')
+        if self.draw_path and self.last_pos:
+            pygame.draw.line(self.env.path_overlay, self.draw_path_col,
+                             (self.last_pos[0]*self.env.width, self.last_pos[1]*self.env.height), (self.pos[0]*self.env.width, self.pos[1]*self.env.height), self.draw_path_width)
 
     def on_collision(self, other, depth):
         if self.solid and other.solid:
@@ -86,7 +100,7 @@ class Entity(object):
                 force_vec[0]*self.collision_elasticity/self.env.speed_fac, self.speed[1] + \
                 force_vec[1]*self.collision_elasticity/self.env.speed_fac
             newspeed = math.sqrt(self.speed[0]**2+self.speed[1]**2)
-            if newspeed > oldspeed*1.1:
+            if self.crash_conservation_of_energy and newspeed > oldspeed*1.1:
                 self.speed = self.speed[0]/newspeed*1.1 * \
                     oldspeed, self.speed[1]/newspeed*oldspeed*1.1
 
@@ -121,6 +135,7 @@ class CircularEntity(Entity):
         self.radius = 10
 
     def draw(self):
+        super().draw()
         x, y = self.pos
         pygame.draw.circle(self.env.surface, self.col,
                            (x*self.env.width, y*self.env.height), self.radius, width=0)
@@ -190,6 +205,7 @@ class RectangularEntity(Entity):
         self.height = 10
 
     def draw(self):
+        super().draw()
         x, y = self.pos
         rect = pygame.Rect(x*self.env.width, y *
                            self.env.width, self.width, self.height)
@@ -349,6 +365,39 @@ class TeleportingReward(OnceReward):
         self.env.new_abs_reward += self.reward
         self.pos = (self.env.random(), self.env.random())
         self.env.check_collisions_for(self)
+
+
+class LoopReward(OnceReward):
+    def __init__(self, env):
+        super().__init__(env)
+        self.loop = [[0.25, 0.5], [0.75, 0.5]]
+        self.state = 0
+        self.jump_to_state()
+        self.barrier_physics = False
+
+    def jump_to_state(self):
+        pos_vec = [v for v in self.loop[self.state]]
+        if len(pos_vec) == 4:
+            pos_vec = pos_vec[0] + pos_vec[2] * \
+                (self.env.random()-0.5), pos_vec[1] + \
+                pos_vec[3]*(self.env.random()-0.5)
+        self.pos = pos_vec
+
+    def next_state(self):
+        self.state = (self.state + 1) % len(self.loop)
+
+    def jump_next(self):
+        self.next_state()
+        self.jump_to_state()
+
+    def on_collected(self):
+        self.env.new_abs_reward += self.reward
+        self.jump_next()
+
+    def physics_step(self):
+        if self.barrier_physics:
+            self.env.check_collisions_for(self)
+        super().physics_step()
 
 
 class TimeoutReward(OnceReward):
