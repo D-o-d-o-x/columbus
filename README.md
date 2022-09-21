@@ -29,14 +29,11 @@ There exist two ways to implement new envs:
 - If you want visualize the covariance you have supply the cholesky-decomp of the cov-matrix to render
 - If you want to render into a mp4, you have to call render with a mode!='human' and assemble/encode the returned frames yourself into a mp4/webm/...
 - Even while the agent plays, some keyboard-inputs are possible (to test the agents reaction to situations he would never enter by itself. Look at \_handle_user_input in env.py for avaible keys)
+- The sampling-rate of the physics engine is bound to the frame-rate of the rendering engine (1:1). This means too low fps / to fast agents / to thin barriers will lead to the agent tunneling through barriers. You can fix this by setting a higher agent-drag (which decreases the maximum speed) or making barriers thicker. A feature allowing the physics engine to sample multiple smaler steps within a single rendering step could be added in the future.
 
 ### entities.py
 
 Contains all implemented entities (e.g. the Agent, Rewards and Enemies)
-
-##### Some caveats
-
-- Support for non spherical entities (rectangles) is very new. There might be bugs that I have not yet found
 
 ### observables.py
 
@@ -45,11 +42,8 @@ Contains all 'oberservables'. These are attached to envs to define what kind of 
 ##### Some caveats
 
 - CNNObservable seems to be broken currently. (Fixing it is also no priority for me)
+- RayObservable is using a naive ray-marching (basicaly just line-sweeping). For large amounts of rays this turn out to be the computational bottleneck of the environment. Switching to a more efficient algorithm (based on euclidean formulars and line intersects) would be possible in the future...
 
 ### humanPlayer.py
 
-Allows environments to be played by a human using mouse input.
-
-##### Some caveats
-
-- Does not yet work for ColumbusConfigDefined...
+Allows environments to be played by a human using mouse input. Now even works for ColumbusConfigDefined.
