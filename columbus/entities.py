@@ -26,14 +26,13 @@ class Entity(object):
         self._coll_add_pushback = 0
         self.crash_conservation_of_energy = True
         self.draw_path = False
-        self.draw_path_col = (55, 55, 55)
+        self.draw_path_col = [int(c/5) for c in self.col]
         self.draw_path_width = 2
 
     def __post_init__(self):
         pass
 
     def physics_step(self):
-        self.last_pos = self.pos[0], self.pos[1]
         x, y = self.pos
         vx, vy = self.speed
         ax, ay = self.acc
@@ -60,6 +59,10 @@ class Entity(object):
         self._crash_list = []
 
     def draw(self):
+        self._draw_path()
+
+    def _draw_path(self):
+        self.last_pos = self.pos[0], self.pos[1]
         if self.draw_path and self.last_pos:
             pygame.draw.line(self.env.path_overlay, self.draw_path_col,
                              (self.last_pos[0]*self.env.width, self.last_pos[1]*self.env.height), (self.pos[0]*self.env.width, self.pos[1]*self.env.height), self.draw_path_width)
