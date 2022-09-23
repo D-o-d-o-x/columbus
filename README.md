@@ -26,10 +26,10 @@ There exist two ways to implement new envs:
 ##### Some caveats / infos
 
 - If you want to render to a window (pygame-gui) call render with mode='human'
-- If you want visualize the covariance you have supply the cholesky-decomp of the cov-matrix to render
+- If you want visualize the covariance you have to supply the cholesky-decomp of the cov-matrix to render
 - If you want to render into a mp4, you have to call render with a mode!='human' and assemble/encode the returned frames yourself into a mp4/webm/...
 - Even while the agent plays, some keyboard-inputs are possible (to test the agents reaction to situations he would never enter by itself. Look at \_handle_user_input in env.py for avaible keys)
-- The sampling-rate of the physics engine is bound to the frame-rate of the rendering engine (1:1). This means too low fps / to fast agents / to thin barriers will lead to the agent tunneling through barriers. You can fix this by setting a higher agent-drag (which decreases the maximum speed) or making barriers thicker. A feature allowing the physics engine to sample multiple smaler steps within a single rendering step could be added in the future.
+- The sampling-rate of the physics engine is bound to the frame-rate of the rendering engine (1:1). This means too low fps / too fast agents / too thin barriers will lead to the agent tunneling through barriers. You can fix this by setting a higher agent-drag (which decreases the maximum speed) or making barriers thicker. A feature allowing the physics engine to sample multiple smaller steps within a single rendering step could be added in the future.
 
 ### entities.py
 
