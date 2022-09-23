@@ -277,7 +277,12 @@ class ColumbusEnv(gym.Env):
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
         self.observable.reset()
+        self._reset_paths()
         return self.observable.get_observation()
+
+    def _reset_paths(self):
+        self.path_overlay = pygame.Surface(
+            (self.width, self.height), pygame.SRCALPHA, 32)
 
     def _draw_entities(self):
         for entity in self.entities:
