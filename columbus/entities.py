@@ -62,10 +62,10 @@ class Entity(object):
         self._draw_path()
 
     def _draw_path(self):
-        self.last_pos = self.pos[0], self.pos[1]
         if self.draw_path and self.last_pos:
             pygame.draw.line(self.env.path_overlay, self.draw_path_col,
                              (self.last_pos[0]*self.env.width, self.last_pos[1]*self.env.height), (self.pos[0]*self.env.width, self.pos[1]*self.env.height), self.draw_path_width)
+        self.last_pos = self.pos[0], self.pos[1]
 
     def on_collision(self, other, depth):
         if self.solid and other.solid:
