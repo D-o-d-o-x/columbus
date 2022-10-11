@@ -263,6 +263,7 @@ class ColumbusEnv(gym.Env):
     def reset(self):
         pygame.init()
         self._init = True
+        self._term_next = False
         self._seed(self.env_seed)
         self._rendered = False
         self._disturb_next = False
