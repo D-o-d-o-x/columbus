@@ -78,8 +78,7 @@ class ColumbusEnv(gym.Env):
         self.aux_penalty_max = aux_penalty_max  # 0 = off
         self.aux_reward_discretize = aux_reward_discretize
         # 0 = dont discretize; how many steps (along diagonal)
-        self.aux_reward_discretize = 0
-        self.penalty_from_edges = False
+        self.penalty_from_edges = False  # not ready yet...
         self.draw_observable = True
         self.draw_joystick = True
         self.draw_entities = True
@@ -105,6 +104,7 @@ class ColumbusEnv(gym.Env):
         self._seed(self.env_seed)
 
         self._init = False
+        self._term_next = False
 
     @property
     def observation_space(self):
@@ -177,7 +177,7 @@ class ColumbusEnv(gym.Env):
                     if self.penalty_from_edges:
                         penalty = self.aux_penalty_max / \
                             (1 + self.sq_dist(entity.pos,
-                             self.agent.pos) - entity.radius - self.agent.redius)
+                             self.agent.pos) - entity.radius - self.agent.radius)
                     else:
                         penalty = self.aux_penalty_max / \
                             (1 + self.sq_dist(entity.pos, self.agent.pos))
@@ -214,8 +214,9 @@ class ColumbusEnv(gym.Env):
         self.score += reward  # aux_reward does not count towards the score
         if self.aux_reward_max:
             reward += self._get_aux_reward()
-        done = self.die_on_zero and self.score <= 0 or self.return_on_score != - \
-            1 and self.score > self.return_on_score or self.terminate_on_reward and gotRew
+        done = self._term_next or (self.die_on_zero and self.score <= 0 or self.return_on_score != -
+                                   1 and self.score > self.return_on_score)
+        self._term_next = self.terminate_on_reward and gotRew
         info = {'score': self.score, 'reward': reward}
         self._rendered = False
         if done:
