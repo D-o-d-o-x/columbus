@@ -219,7 +219,7 @@ class ColumbusEnv(gym.Env):
             reward += self._get_aux_reward()
         self._steps += 1
         done = self._term_next or (self.die_on_zero and self.score <= 0) or (self.return_on_score != -
-                                                                             1 and self.score > self.return_on_score) or self._steps >= self.max_steps
+                                                                             1 and self.score > self.return_on_score) or self._steps == self.max_steps
         # make sure we register the current reward
         self._term_next = self.terminate_on_reward and gotRew
         info = {'score': self.score, 'reward': reward}
