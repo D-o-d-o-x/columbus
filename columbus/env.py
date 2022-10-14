@@ -107,7 +107,6 @@ class ColumbusEnv(gym.Env):
         self._seed(self.env_seed)
 
         self._init = False
-        self._term_next = False
 
     @property
     def observation_space(self):
@@ -218,10 +217,8 @@ class ColumbusEnv(gym.Env):
         if self.aux_reward_max:
             reward += self._get_aux_reward()
         self._steps += 1
-        done = self._term_next or (self.die_on_zero and self.score <= 0) or (self.return_on_score != -
-                                                                             1 and self.score > self.return_on_score) or self._steps == self.max_steps
-        # make sure we register the current reward
-        self._term_next = self.terminate_on_reward and gotRew
+        done = (self.die_on_zero and self.score <= 0) or (self.return_on_score != -
+                                                          1 and self.score > self.return_on_score) or (self._steps == self.max_steps) or (self.terminate_on_reward and gotRew)
         info = {'score': self.score, 'reward': reward}
         self._rendered = False
         if done:
@@ -268,7 +265,6 @@ class ColumbusEnv(gym.Env):
     def reset(self):
         pygame.init()
         self._init = True
-        self._term_next = False
         self._steps = 0
         self._seed(self.env_seed)
         self._rendered = False
