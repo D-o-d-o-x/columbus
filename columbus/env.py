@@ -45,7 +45,7 @@ def parseObs(obsConf):
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False, max_steps=-1):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -90,6 +90,9 @@ class ColumbusEnv(gym.Env):
         self.default_collision_elasticity = default_collision_elasticity
         self.terminate_on_reward = terminate_on_reward
         self.agent_draw_path = agent_draw_path
+
+        self.max_steps = max_steps
+        self._steps = 0
 
         self.paused = False
         self.keypress_timeout = 0
@@ -214,8 +217,10 @@ class ColumbusEnv(gym.Env):
         self.score += reward  # aux_reward does not count towards the score
         if self.aux_reward_max:
             reward += self._get_aux_reward()
-        done = self._term_next or (self.die_on_zero and self.score <= 0 or self.return_on_score != -
-                                   1 and self.score > self.return_on_score)
+        self._steps += 1
+        done = self._term_next or (self.die_on_zero and self.score <= 0) or (self.return_on_score != -
+                                                                             1 and self.score > self.return_on_score) or self._steps >= self.max_steps
+        # make sure we register the current reward
         self._term_next = self.terminate_on_reward and gotRew
         info = {'score': self.score, 'reward': reward}
         self._rendered = False
@@ -264,6 +269,7 @@ class ColumbusEnv(gym.Env):
         pygame.init()
         self._init = True
         self._term_next = False
+        self._steps = 0
         self._seed(self.env_seed)
         self._rendered = False
         self._disturb_next = False
