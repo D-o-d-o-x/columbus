@@ -298,7 +298,7 @@ class ColumbusEnv(gym.Env):
         for entity in self.entities:
             entity.draw()
 
-    def _draw_values(self, value_func, static=True, resolution=64, color_depth=255):
+    def _draw_values(self, value_func, static=True, resolution=64, color_depth=192):
         if not (static and self._has_value_map):
             agentpos = self.agent.pos
             agentspeed = self.agent.speed
@@ -308,7 +308,7 @@ class ColumbusEnv(gym.Env):
             obs = []
             for i in range(resolution):
                 for j in range(resolution):
-                    x, y = i*(self.width/resolution), j * \
+                    x, y = (i+0.5)*(self.width/resolution), (j+0.5) *\
                         (self.height/resolution)
                     self.agent.pos = x, y
                     ob = self.observable.get_observation()
@@ -317,22 +317,24 @@ class ColumbusEnv(gym.Env):
             self.agent.speed = agentspeed
 
             V = value_func(th.Tensor(obs))
-            V -= V.min()
-            V /= V.max()
+            V /= max(V.max(), -1*V.min())*2
+            V += 0.5
 
             c = 0
             for i in range(resolution):
                 for j in range(resolution):
                     v = V[c]
                     c += 1
-                    col = [int((1-c)*color_depth), int(c*color_depth), 0]
+                    col = [int((1-v)*color_depth),
+                           int(v*color_depth), 0, color_depth]
                     x, y = i*(self.width/resolution), j * \
                         (self.height/resolution)
-                    rect = pygame.Rect(x, y, self.env.width/resolution,
-                                       self.height/resolution)
+                    rect = pygame.Rect(x, y, int(self.width/resolution)+1,
+                                       int(self.height/resolution)+1)
                     pygame.draw.rect(self.value_overlay, col,
                                      rect, width=0)
-        self.screen.blit(self.value_overlay, (0, 0))
+        self.surface.blit(self.value_overlay, (0, 0))
+        self._has_value_map = True
 
     def _draw_observable(self, forceDraw=False):
         if self.draw_observable and (self.visible or forceDraw):
@@ -433,6 +435,9 @@ class ColumbusEnv(gym.Env):
         self._ensure_surface()
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
+        if value_func != None:
+            self._draw_values(value_func, values_static)
+        self.surface.blit(self.path_overlay, (0, 0))
         if self.draw_entities:
             self._draw_entities()
         else:
@@ -440,9 +445,6 @@ class ColumbusEnv(gym.Env):
         self._rendered = True
         if mode == 'human' and dont_show:
             return
-        if value_func != None:
-            self._draw_values(value_func, values_static)
-        self.screen.blit(self.path_overlay, (0, 0))
         self.screen.blit(self.surface, (0, 0))
         self._draw_observable(forceDraw=mode != 'human')
         self._draw_joystick(forceDraw=mode != 'human')

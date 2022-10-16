@@ -1,3 +1,4 @@
+import torch as th
 from time import sleep, time
 import numpy as np
 import pygame
@@ -69,11 +70,16 @@ def chooseEnv():
         return Env(fps=30)
 
 
+def value_func(obs):
+    return th.rand(obs.shape[0])-0.5
+
+
 def playEnv(env):
     done = False
     env.reset()
     while not done:
         t1 = time()
+        # env.render(value_func=value_func)
         env.render()
         pos = (0.5, 0.5)
         pos = pygame.mouse.get_pos()
