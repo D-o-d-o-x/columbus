@@ -323,7 +323,7 @@ class ColumbusEnv(gym.Env):
             c = 0
             for i in range(resolution):
                 for j in range(resolution):
-                    v = V[c]
+                    v = V[c].item()
                     c += 1
                     col = [int((1-v)*color_depth),
                            int(v*color_depth), 0, color_depth]
