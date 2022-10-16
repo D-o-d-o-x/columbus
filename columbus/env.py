@@ -266,7 +266,7 @@ class ColumbusEnv(gym.Env):
         self.agent.pos = self.start_pos
         # Expand this function
 
-    def reset(self):
+    def reset(self, force_reset_path=False):
         pygame.init()
         self._init = True
         self._steps = 0
@@ -286,7 +286,7 @@ class ColumbusEnv(gym.Env):
         self.setup()
         self.entities.append(self.agent)  # add it last, will be drawn on top
         self.observable.reset()
-        if self.clear_path_on_reset:
+        if self.clear_path_on_reset or force_reset_path:
             self._reset_paths()
         return self.observable.get_observation()
 
