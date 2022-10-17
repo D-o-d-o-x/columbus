@@ -316,7 +316,7 @@ class ColumbusEnv(gym.Env):
             self.agent.pos = agentpos
             self.agent.speed = agentspeed
 
-            V = value_func(th.Tensor(obs))
+            V = value_func(th.Tensor(np.array(obs)))
             V /= max(V.max(), -1*V.min())*2
             V += 0.5
 
@@ -408,6 +408,8 @@ class ColumbusEnv(gym.Env):
                 self.draw_confidence_ellipse = not self.draw_confidence_ellipse
             elif keys[pygame.K_r]:
                 self.reset()
+            elif keys[pygame.K_t]:
+                self._reset_paths()
             elif keys[pygame.K_p]:
                 self.paused = not self.paused
             else:
