@@ -308,8 +308,7 @@ class ColumbusEnv(gym.Env):
             obs = []
             for i in range(resolution):
                 for j in range(resolution):
-                    x, y = (i+0.5)*(self.width/resolution), (j+0.5) *\
-                        (self.height/resolution)
+                    x, y = (i+0.5)/resolution, (j+0.5)/resolution
                     self.agent.pos = x, y
                     ob = self.observable.get_observation()
                     obs.append(ob)
