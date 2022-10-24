@@ -45,7 +45,7 @@ def parseObs(obsConf):
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False, clear_path_on_reset=True, max_steps=-1):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False, clear_path_on_reset=True, max_steps=-1, value_color_mapper=None):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -91,6 +91,7 @@ class ColumbusEnv(gym.Env):
         self.terminate_on_reward = terminate_on_reward
         self.agent_draw_path = agent_draw_path
         self.clear_path_on_reset = clear_path_on_reset
+        self.value_color_mapper = value_color_mapper
 
         self.max_steps = max_steps
         self._steps = 0
@@ -298,8 +299,11 @@ class ColumbusEnv(gym.Env):
         for entity in self.entities:
             entity.draw()
 
-    def _draw_values(self, value_func, static=True, resolution=64, color_depth=192):
-        if not (static and self._has_value_map):
+    def _invalidate_value_map(self):
+        self._has_value_map = False
+
+    def _draw_values(self, value_func, static=True, resolution=64, color_depth=224, color_mapper=None):
+        if (not (static and self._has_value_map)):
             agentpos = self.agent.pos
             agentspeed = self.agent.speed
             self.agent.speed = (0, 0)
@@ -318,6 +322,9 @@ class ColumbusEnv(gym.Env):
             V = value_func(th.Tensor(np.array(obs)))
             V /= max(V.max(), -1*V.min())*2
             V += 0.5
+
+            if color_mapper != None:
+                V = color_mapper(V)
 
             c = 0
             for i in range(resolution):
@@ -437,7 +444,8 @@ class ColumbusEnv(gym.Env):
         pygame.draw.rect(self.surface, (0, 0, 0),
                          pygame.Rect(0, 0, self.width, self.height))
         if value_func != None:
-            self._draw_values(value_func, values_static)
+            self._draw_values(value_func, values_static,
+                              color_mapper=self.value_color_mapper)
         self.surface.blit(self.path_overlay, (0, 0))
         if self.draw_entities:
             self._draw_entities()

@@ -354,6 +354,9 @@ class OnceReward(Reward):
         self.reward = 500
 
     def on_collected(self):
+        # Force rerender of value func (even in static envs)
+        self.env._invalidate_value_map()
+
         self.env.new_abs_reward += self.reward
         self.kill()
 
