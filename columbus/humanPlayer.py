@@ -28,7 +28,7 @@ def loadConfigDefinedEnv(EnvClass):
     p = input('[Path to config> ')
     with open(p, 'r') as f:
         docs = list([d for d in yaml.safe_load_all(
-            f) if 'name' in d and d['name'] not in ['SLURM']])
+            f) if d and 'name' in d and d['name'] not in ['SLURM']])
     for i, doc in enumerate(docs):
         name = doc['name']
         print('['+str(i)+'] '+name)

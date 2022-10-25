@@ -1,4 +1,7 @@
-    env_args:
+name: Example
+params:
+ task:
+  env_args:
       observable:
         - type: State
           coordsAgent: True
@@ -43,3 +46,4 @@
       aux_reward_max: 1
       aux_penalty_max: 0.1
       void_damage: 5
+---
