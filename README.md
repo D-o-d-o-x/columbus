@@ -21,7 +21,7 @@ Contains the ColumbusEnv.
 There exist two ways to implement new envs:
 
 - Subclassing ColumbusEnv and expanding _init_ and overriding _setup_.
-- Using the ColumbusConfigDefined with a desired configuration. This makes configuring ColumbusEnvs via ClusterWorks2-configs possible. (See ColumbusConfigDefinedExample.md for an example of how the parameters are supposed to look like (uses yaml format), I don't have to to write a better documentation right now...)
+- Using the ColumbusConfigDefined with a desired configuration. This makes configuring ColumbusEnvs via ClusterWorks2-configs possible. (See ColumbusConfigDefinedExample.md for an example of how the parameters are supposed to look like (uses yaml format), I don't have time to write a better documentation right now...)
 
 ##### Some caveats / infos
 
