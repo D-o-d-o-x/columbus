@@ -242,7 +242,7 @@ class ColumbusEnv(gym.Env):
                     or self.agent.pos[1] < 0.001 or self.agent.pos[1] > 0.999:
                 reward -= self.void_damage/self.fps
         self.score += reward  # aux_reward does not count towards the score
-        if self.aux_reward_max:
+        if self.aux_reward_max or self.aux_penalty_max:
             reward += self._get_aux_reward()
         self._steps += 1
         done = (self.die_on_zero and self.score <= 0) or (self.return_on_score != -
