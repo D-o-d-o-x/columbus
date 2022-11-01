@@ -381,13 +381,13 @@ class ColumbusEnv(gym.Env):
             pygame.draw.circle(self.screen, smolcol, (20+int(60*x) +
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
-    def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=0.5):
+    def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=0.1):
         # The 'seconds'-parameter only really makes sense, when using control_type='SPEED',
         # you can still use it to scale the cov-ellipse when using control_type='ACC',
         # but it's relation to 'seconds' is no longer there...
         if self.draw_confidence_ellipse and (self.visible or forceDraw):
             col = (255, 255, 255)
-            f = seconds*self.speed_fac*self.fps*max(self.width, self.height)
+            f = seconds*self.speed_fac*self.fps*max(self.height, self.width)
 
             while len(chol.shape) > 2:
                 chol = chol[0]
@@ -399,9 +399,8 @@ class ColumbusEnv(gym.Env):
 
             L, V = th.linalg.eig(cov)
             L, V = L.real, V.real
-            # 5.911 is the magic-number to get a 95%-confidence interval
-            l1, l2 = int(abs(math.sqrt(L[0].item()*5.911)*f)) + \
-                1, int(abs(math.sqrt(L[1].item()*5.911)*f))+1
+            l1, l2 = int(abs(math.sqrt(L[0].item())*f)) + \
+                1, int(abs(math.sqrt(L[1].item())*f))+1
 
             if l1 >= l2:
                 w, h = l1, l2
