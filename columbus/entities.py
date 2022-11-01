@@ -368,6 +368,9 @@ class TeleportingReward(OnceReward):
         self.env.check_collisions_for(self)
 
     def on_collected(self):
+        # Force rerender of value func (even in static envs)
+        self.env._invalidate_value_map()
+
         self.env.new_abs_reward += self.reward
         self.pos = (self.env.random(), self.env.random())
         self.env.check_collisions_for(self)
@@ -382,6 +385,9 @@ class LoopReward(OnceReward):
         self.barrier_physics = False
 
     def jump_to_state(self):
+        # Force rerender of value func (even in static envs)
+        self.env._invalidate_value_map()
+
         pos_vec = [v for v in self.loop[self.state]]
         if len(pos_vec) == 4:
             pos_vec = pos_vec[0] + pos_vec[2] * \
@@ -422,6 +428,9 @@ class TimeoutReward(OnceReward):
 
     def on_collected(self):
         if self.avaible:
+            # Force rerender of value func (even in static envs)
+            self.env._invalidate_value_map()
+
             self.env.new_abs_reward += self.reward
             self.set_avaible(False)
             self.env.timers.append((self.timeout, self.set_avaible, True))
@@ -468,6 +477,9 @@ class TeleportingGoal(Goal):
         self.env.check_collisions_for(self)
 
     def on_collected(self):
+        # Force rerender of value func (even in static envs)
+        self.env._invalidate_value_map()
+
         self.env.new_abs_reward += self.reward
         self.pos = (self.env.random(), self.env.random())
         self.env.check_collisions_for(self)
