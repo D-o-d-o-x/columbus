@@ -381,13 +381,13 @@ class ColumbusEnv(gym.Env):
             pygame.draw.circle(self.screen, smolcol, (20+int(60*x) +
                                                       self.joystick_offset[0], 20+int(60*y)+self.joystick_offset[1]), 20, width=0)
 
-    def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=1):
+    def _draw_confidence_ellipse(self, chol, forceDraw=False, seconds=0.5):
         # The 'seconds'-parameter only really makes sense, when using control_type='SPEED',
         # you can still use it to scale the cov-ellipse when using control_type='ACC',
         # but it's relation to 'seconds' is no longer there...
         if self.draw_confidence_ellipse and (self.visible or forceDraw):
             col = (255, 255, 255)
-            f = seconds/self.speed_fac
+            f = seconds*self.speed_fac*self.fps*max(self.width, self.height)
 
             while len(chol.shape) > 2:
                 chol = chol[0]
@@ -399,21 +399,20 @@ class ColumbusEnv(gym.Env):
 
             L, V = th.linalg.eig(cov)
             L, V = L.real, V.real
-            w, h = int(abs(L[0].item()*f))+1, int(abs(L[1].item()*f))+1
-            # In theory we would have to solve:
-            # R = [[cos, -sin],[sin, cos]]
-            # But we only use the -sin term.
-            # Because of this our calculated angle might be wrong
-            # by periods of 180°
-            # But since an ellipsoid does not change under such an 'error',
-            # we don't care
-            # ang1 = int(math.acos(V[0, 0])/math.pi*360)
-            ang2 = int(math.asin(-V[0, 1])/math.pi*360)
-            # ang3 = int(math.asin(V[1, 0])/math.pi*360)
-            ang = ang2
+            # 5.911 is the magic-number to get a 95%-confidence interval
+            l1, l2 = int(abs(math.sqrt(L[0].item()*5.911)*f)) + \
+                1, int(abs(math.sqrt(L[1].item()*5.911)*f))+1
 
-            # print(cov)
-            # print(w, h, (ang1, ang2, ang3))
+            if l1 >= l2:
+                w, h = l1, l2
+                run, rise = V[0][0], V[0][1]
+            else:
+                w, h = l2, l1
+                run, rise = V[1][0], V[1][1]
+
+            ang = (math.atan(rise/run))/(2*math.pi)*360
+
+            # print(w, h, (run, rise, ang))
 
             x, y = self.agent.pos
             x, y = x*self.width, y*self.height
