@@ -71,7 +71,8 @@ def chooseEnv():
 
 
 def value_func(obs):
-    return th.rand(obs.shape[0])-0.5
+    return obs[:, 0]
+    # return th.rand(obs.shape[0])-0.5
 
 
 def playEnv(env):
