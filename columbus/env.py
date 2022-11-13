@@ -91,11 +91,11 @@ class ColumbusEnv(gym.Env):
         self.terminate_on_reward = terminate_on_reward
         self.agent_draw_path = agent_draw_path
         self.clear_path_on_reset = clear_path_on_reset
+
         if value_color_mapper == 'atan':
             def value_color_mapper(x): return th.atan(x*2)/0.786/2
         elif value_color_mapper == 'tanh':
             def value_color_mapper(x): return th.tanh(x*2)/0.762/2
-
         self.value_color_mapper = value_color_mapper
 
         self.max_steps = max_steps

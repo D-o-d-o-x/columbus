@@ -1,0 +1,67 @@
+name: "DEFAULT"
+
+params:
+  task:
+    task: columbus
+    env_name: ColumbusConfigDefined-v0
+    env_args:
+      observable:
+        - type: State
+          coordsAgent: True
+          speedAgent: True
+          coordsRelativeToAgent: False
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: State
+          coordsAgent: False
+          speedAgent: False
+          coordsRelativeToAgent: True
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: RayCast
+          num_rays: 6
+          chans: [Enemy]
+      entities:
+        - type: RectBarrier
+          damage: 10 #1
+          width: 25
+          height: 120 # 360 - 5%(720)
+          pos: [0.45, 0]
+        - type: RectBarrier
+          damage: 10 #1
+          width: 25
+          height: 1000
+          pos: [0.45, 0.25]
+        - type: RectBarrier
+          damage: 10 #1
+          width: 25
+          height: 520 # 360 - 5%(720)
+          pos: [0.55, 0]
+        - type: RectBarrier
+          damage: 10 #1
+          width: 25
+          height: 200
+          pos: [0.55, 0.80]
+        - type: LoopReward
+          num: 1
+          reward: 100 #25
+          radius: 20
+          loop: [[0.125, 0.5, 0.1, 0.5], [0.875, 0.5, 0.1, 0.5]]
+      default_collision_elasticity: 0.8
+      start_score: 10
+      speed_fac: 0.01
+      acc_fac: 0.1
+      die_on_zero: False #True
+      agent_drag: 0.1 # 0.05
+      controll_type: ACC # SPEED
+      aux_reward_max: 1
+      aux_penalty_max: 0.01
+      void_damage: 5 #1
+      agent_draw_path: True
+---
