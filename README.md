@@ -14,6 +14,11 @@ Project Columbus is a framework for trivial 2D OpenAI Gym environments that are 
 pip install -e .
 ```
 
+## Overview
+Columbus.pdf contains a overview of columbus.
+
+## Layout of the Repo
+
 ### env.py
 
 ![Screenshot](./img_README.png)  
