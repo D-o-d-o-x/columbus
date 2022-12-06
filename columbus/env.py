@@ -855,6 +855,8 @@ class ColumbusConfigDefined(ColumbusEnv):
         if type(s) in [int, float]:
             return s
         if s.replace('.', '', 1).isdigit():
+            if target == 'px':
+                return int(s)
             return float(s)
         num, unit = s[:-2], s[-2:]
         num = float(num)
@@ -876,7 +878,7 @@ class ColumbusConfigDefined(ColumbusEnv):
         if target == 'em':
             return em
         elif target == 'px':
-            return em * ({'x': self.width, 'y': self.height}[axis])
+            return int(em * ({'x': self.width, 'y': self.height}[axis]))
 
     def setup(self):
         self.agent.pos = self.start_pos

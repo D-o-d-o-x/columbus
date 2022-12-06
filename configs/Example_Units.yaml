@@ -63,6 +63,11 @@ params:
           width: 25ry
           height: 25rx
           pos: [0.75em, 60px]
+        - type: RectBarrier
+          num: 1
+          width: 2ct
+          height: 3ct
+          pos: [0.75em, 90px]
         - type: OnceReward
           reward: 100
           radius: 3ct
