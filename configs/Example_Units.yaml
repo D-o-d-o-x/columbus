@@ -6,7 +6,7 @@ name: "DEFAULT"
 # ct: 100ct = Full Width / Height
 # rx: pixels relative to width
 # ry: pixels relative to height
-# au: 1au = 36px
+# au: 1au = 36px (https://knowyourmeme.com/memes/absolute-unit)
 #
 # When no unit is given, we use the folowing defaults
 # (compatible with legacy behavior)
