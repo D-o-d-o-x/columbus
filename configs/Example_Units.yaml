@@ -65,14 +65,14 @@ params:
           pos: [0.75em, 60px]
         - type: RectBarrier
           num: 1
-          width: 2ct
-          height: 3ct
+          width: 20 # defaults to rx (px scaled from x-axis)
+          height: 10 # defaults to ry (px scaled from y-axis)
           pos: [0.75em, 90px]
         - type: OnceReward
           reward: 100
           radius: 3ct
-          pos: [0.3, 0.8]
-      start_pos: [0.1, 0.21]
+          pos: [0.3, 0.8] # defaults to em
+      start_pos: [90ct, 20ct]
       default_collision_elasticity: 0.8
       start_score: 10
       speed_fac: 0.01

@@ -504,6 +504,8 @@ class ColumbusConfigDefined(ColumbusEnv):
         super().__init__(
             observable=observable, fps=fps, env_seed=env_seed, **kw)
         self.entities_definitions = entities
+        self.start_pos = self.conv_unit(self.start_pos[0], target='em', axis='x'), self.conv_unit(
+            self.start_pos[1], target='em', axis='y')
 
     def is_unit(self, s):
         if type(s) in [int, float]:
