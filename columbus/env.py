@@ -513,7 +513,7 @@ class ColumbusConfigDefined(ColumbusEnv):
         if s.replace('.', '', 1).isdigit():
             return True
         num, unit = s[:-2], s[-2:]
-        if unit in ['px', 'em', 'rx', 'ry', 'ct']:
+        if unit in ['px', 'em', 'rx', 'ry', 'ct', 'au']:
             if num.replace('.', '', 1).isdigit():
                 return True
         return False
@@ -538,6 +538,8 @@ class ColumbusConfigDefined(ColumbusEnv):
             em = num
         elif unit == 'px':
             em = num / ({'x': self.width, 'y': self.height}[axis])
+        elif unit == 'au':
+            em = num * 36 / ({'x': self.width, 'y': self.height}[axis])
         elif unit == 'ct':
             em = num / 100
         else:

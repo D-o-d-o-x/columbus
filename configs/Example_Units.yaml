@@ -6,13 +6,15 @@ name: "DEFAULT"
 # ct: 100ct = Full Width / Height
 # rx: pixels relative to width
 # ry: pixels relative to height
+# au: 1au = 36px
 #
 # When no unit is given, we use the folowing defaults
 # (compatible with legacy behavior)
 # pos: em
 # all other: px
 #
-# ct is the recommendet unit...
+# ct is the recommendet unit.
+# If you need a unit, that is not responsive in regards to width/height, use au / px.
 
 params:
   task:
@@ -70,7 +72,7 @@ params:
           pos: [0.75em, 90px]
         - type: OnceReward
           reward: 100
-          radius: 3ct
+          radius: 1au
           pos: [0.3, 0.8] # defaults to em
       start_pos: [90ct, 20ct]
       default_collision_elasticity: 0.8
