@@ -839,6 +839,45 @@ class ColumbusConfigDefined(ColumbusEnv):
             observable=observable, fps=fps, env_seed=env_seed, **kw)
         self.entities_definitions = entities
 
+    def is_unit(self, s):
+        if type(s) in [int, float]:
+            return True
+        if s.replace('.', '', 1).isdigit():
+            return True
+        num, unit = s[:-2], s[-2:]
+        if unit in ['px', 'em', 'rx', 'ry', 'ct']:
+            if num.replace('.', '', 1).isdigit():
+                return True
+        return False
+
+    def conv_unit(self, s, target='px', axis='x'):
+        assert self.is_unit(s)
+        if type(s) in [int, float]:
+            return s
+        if s.replace('.', '', 1).isdigit():
+            return float(s)
+        num, unit = s[:-2], s[-2:]
+        num = float(num)
+        if unit == 'rx':
+            unit = 'px'
+            axis = 'x'
+        elif unit == 'ry':
+            unit = 'px'
+            axis = 'y'
+        if unit == 'em':
+            em = num
+        elif unit == 'px':
+            em = num / ({'x': self.width, 'y': self.height}[axis])
+        elif unit == 'ct':
+            em = num / 100
+        else:
+            raise Exception('Conversion not implemented')
+
+        if target == 'em':
+            return em
+        elif target == 'px':
+            return em * ({'x': self.width, 'y': self.height}[axis])
+
     def setup(self):
         self.agent.pos = self.start_pos
         for i, e in enumerate(self.entities_definitions):
@@ -848,7 +887,15 @@ class ColumbusConfigDefined(ColumbusEnv):
                 conf = {k: v for k, v in e.items() if str(
                     k) not in ['num', 'num_rand', 'type']}
 
-                for k, v in conf.items():
+                for k, v_raw in conf.items():
+                    if k == 'pos':
+                        v = self.conv_unit(v_raw[0], target='em', axis='x'), self.conv_unit(
+                            v_raw[1], target='em', axis='y')
+                    elif k in ['width', 'height', 'radius']:
+                        v = self.conv_unit(
+                            v_raw, target='px', axis='y' if k == 'height' else 'x')
+                    else:
+                        v = v_raw
                     if k.endswith('_rand'):
                         n = k.replace('_rand', '')
                         cur = getattr(

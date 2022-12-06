@@ -15,6 +15,7 @@ pip install -e .
 ```
 
 ## Overview
+
 Columbus.pdf contains a overview of columbus.
 
 ## Layout of the Repo
@@ -27,6 +28,7 @@ There exist two ways to implement new envs:
 
 - Subclassing ColumbusEnv and expanding _init_ and overriding _setup_.
 - Using the ColumbusConfigDefined with a desired configuration. This makes configuring ColumbusEnvs via ClusterWorks2-configs possible. (See configs/example.yaml for an example of how the parameters are supposed to look like (uses yaml format)
+- We now support using units (px, em, ct) in config files, examples can be found in configs/Example_Units.yaml
 - The environments used in my thesis can also be found in configs/
 
 ##### Some caveats / infos

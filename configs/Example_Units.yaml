@@ -1,0 +1,85 @@
+name: "DEFAULT"
+
+# Supported Units:
+# px: Pixels
+# em: 1em = Full Width / Height
+# ct: 100ct = Full Width / Height
+# rx: pixels relative to width
+# ry: pixels relative to height
+#
+# When no unit is given, we use the folowing defaults
+# (compatible with legacy behavior)
+# pos: em
+# all other: px
+#
+# ct is the recommendet unit...
+
+params:
+  task:
+    task: columbus
+    env_name: ColumbusConfigDefined-v0
+    env_args:
+      observable:
+        - type: State
+          coordsAgent: True
+          speedAgent: True
+          coordsRelativeToAgent: False
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: State
+          coordsAgent: False
+          speedAgent: False
+          coordsRelativeToAgent: True
+          coordsRewards: True
+          coordsEnemys: False
+          enemysNoBarriers: True
+          rewardsTimeouts: False
+          include_rand: True
+        - type: Compass
+        - type: RayCast
+          num_rays: 6
+          chans: [Enemy]
+      entities:
+        - type: RectBarrier
+          num: 1
+          width: 50ct
+          height: 50ct
+          pos: [0ct, 0ct]
+        - type: RectBarrier
+          num: 1
+          width: 50ct
+          height: 50ct
+          pos: [50ct, 50ct]
+        - type: RectBarrier
+          num: 1
+          width: 25rx
+          height: 25ry
+          pos: [0.75em, 30px]
+        - type: RectBarrier
+          num: 1
+          width: 25ry
+          height: 25rx
+          pos: [0.75em, 60px]
+        - type: OnceReward
+          reward: 100
+          radius: 3ct
+          pos: [0.3, 0.8]
+      start_pos: [0.1, 0.21]
+      default_collision_elasticity: 0.8
+      start_score: 10
+      speed_fac: 0.01
+      acc_fac: 0.1
+      die_on_zero: False #True
+      agent_drag: 0.1 # 0.05
+      controll_type: ACC # SPEED
+      aux_reward_max: 1
+      aux_penalty_max: 0.01
+      void_damage: 5 #1
+      terminate_on_reward: True
+      agent_draw_path: True
+      clear_path_on_reset: False
+      max_steps: 450 # 1800
+---
