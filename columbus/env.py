@@ -944,11 +944,18 @@ class ColumbusBlub(ColumbusEnv):
 
 ###
 # Registering Envs fro Gym
-register(
+register(  # Legacy
     id='ColumbusConfigDefined-v0',
     entry_point=ColumbusConfigDefined,
     max_episode_steps=30*60*2,  # 2 min at default (30) fps
 )
+
+register(
+    id='Columbus-v1',
+    entry_point=ColumbusConfigDefined
+)
+
+###
 
 # register(
 #    id='ColumbusBlub-v0',
@@ -957,17 +964,17 @@ register(
 # )
 
 
-register(
-    id='ColumbusTestCnn-v0',
-    entry_point=ColumbusTest3_1,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusTestCnn-v0',
+#    entry_point=ColumbusTest3_1,
+#    max_episode_steps=30*60*2,
+# )
 
-register(
-    id='ColumbusTestRay-v0',
-    entry_point=ColumbusTestRay,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusTestRay-v0',
+#    entry_point=ColumbusTestRay,
+#    max_episode_steps=30*60*2,
+# )
 
 # register(
 #    id='ColumbusRayDrone-v0',
@@ -1005,11 +1012,11 @@ register(
 #    max_episode_steps=30*60*2,
 # )
 
-register(
-    id='ColumbusStateWithBarriers-v0',
-    entry_point=ColumbusStateWithBarriers,
-    max_episode_steps=30*60*2,
-)
+# register(
+#    id='ColumbusStateWithBarriers-v0',
+#    entry_point=ColumbusStateWithBarriers,
+#    max_episode_steps=30*60*2,
+# )
 
 # register(
 #    id='ColumbusCompassWithBarriers-v0',
