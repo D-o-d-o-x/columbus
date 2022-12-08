@@ -138,14 +138,17 @@ class RayObservable(Observable):
             entities_l.append(entities.Void(self.env))
         for entity in self.env.entities:
             if entity.shape == 'rect':
+                x, y = entity.pos[0]+entity.width/self.env.width / \
+                    2, entity.pos[1]+entity.height/self.env.height/2
                 radius = (entity.width/2 + entity.height/2)*1.0
             elif entity.shape == 'circle':
+                x, y = entity.pos[0], entity.pos[1]
                 radius = entity.radius
             else:
                 raise Exception(
                     'Can only raycast circular and rectangular entities!')
-            sq_dist = ((self.env.agent.pos[0]-entity.pos[0])*self.env.width) ** 2 \
-                + ((self.env.agent.pos[1]-entity.pos[1])*self.env.height) ** 2
+            sq_dist = ((self.env.agent.pos[0]-x)*self.env.width) ** 2 \
+                + ((self.env.agent.pos[1]-y)*self.env.height) ** 2
             if sq_dist <= (radius + self.env.agent.radius + self.ray_len)**2:
                 entities_l.append(entity)  # cannot use yield here!
         return entities_l
