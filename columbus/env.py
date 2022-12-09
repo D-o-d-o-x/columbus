@@ -15,7 +15,7 @@ from columbus.utils import soft_int, parseObs
 class ColumbusEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False, clear_path_on_reset=True, max_steps=-1, value_color_mapper='tanh', width=720, height=720, agent_attrs={}):
+    def __init__(self, observable=observables.Observable(), fps=60, env_seed=3.1, master_seed=None, start_pos=(0.5, 0.5), start_score=0, speed_fac=0.01, acc_fac=0.04, die_on_zero=False, return_on_score=-1, reward_mult=1, agent_drag=0, controll_type='SPEED', aux_reward_max=1, aux_penalty_max=0, aux_reward_discretize=0, void_is_type_barrier=True, void_damage=1, torus_topology=False, default_collision_elasticity=1, terminate_on_reward=False, agent_draw_path=False, clear_path_on_reset=True, max_steps=-1, value_color_mapper='tanh', width=720, height=720, agent_attrs={}, agent_cls=entities.Agent, exception_for_unsupported_collision=True):
         super(ColumbusEnv, self).__init__()
         self.action_space = spaces.Box(
             low=-1, high=1, shape=(2,), dtype=np.float32)
@@ -63,7 +63,12 @@ class ColumbusEnv(gym.Env):
         self.clear_path_on_reset = clear_path_on_reset
         self.path_decay = 0.1
 
+        if isinstance(agent_cls, str):
+            agent_cls = getattr(entities, agent_cls)
+        self.Agent_cls = agent_cls
         self.agent_attrs = agent_attrs
+
+        self.exception_for_unsupported_collision = exception_for_unsupported_collision
 
         if value_color_mapper == 'atan':
             def value_color_mapper(x): return th.atan(x*2)/0.786/2
@@ -217,8 +222,8 @@ class ColumbusEnv(gym.Env):
         reward, self.new_reward, self.new_abs_reward = self.new_reward / \
             self.fps + self.new_abs_reward, 0, 0
         if not self.torus_topology:
-            if self.agent.pos[0] < 0.001 or self.agent.pos[0] > 0.999 \
-                    or self.agent.pos[1] < 0.001 or self.agent.pos[1] > 0.999:
+            if self.agent.getTop() < 1 or self.agent.getBottom() > self.height-1 \
+                    or self.agent.getLeft() < 1 or self.agent.getRight() > self.width-1:
                 reward -= self.void_damage/self.fps
         self.score += reward  # aux_reward does not count towards the score
         if self.aux_reward_max or self.aux_penalty_max:
@@ -252,8 +257,10 @@ class ColumbusEnv(gym.Env):
         elif shapes == ['circle', 'rect']:
             return sum([abs(d) for d in e1._get_crash_force_dir(e2)])
         else:
-            raise Exception(
-                'Checking for collision between unsupported shapes: '+str(shapes))
+            if self.exception_for_unsupported_collision:
+                raise Exception(
+                    'Checking for collision between unsupported shapes: '+str(shapes))
+            return 0.0
 
     def kill_entity(self, target):
         newEntities = []
@@ -270,7 +277,7 @@ class ColumbusEnv(gym.Env):
         # Expand this function
 
     def _spawnAgent(self):
-        self.agent = entities.Agent(self)
+        self.agent = self.Agent_cls(self)
         self.agent.draw_path = self.agent_draw_path
         for k, v in self.agent_attrs.items():
             setattr(self.agent, k, v)
@@ -497,11 +504,11 @@ class ColumbusConfigDefined(ColumbusEnv):
     def is_unit(self, s):
         if type(s) in [int, float]:
             return True
-        if s.replace('.', '', 1).isdigit():
+        if s.replace('.', '', 1).replace('-', '0', 1).isdigit():
             return True
         num, unit = s[:-2], s[-2:]
         if unit in ['px', 'em', 'rx', 'ry', 'ct', 'au']:
-            if num.replace('.', '', 1).isdigit():
+            if num.replace('.', '', 1).replace('-', '0', 1).isdigit():
                 return True
         return False
 
@@ -556,11 +563,32 @@ class ColumbusConfigDefined(ColumbusEnv):
                     else:
                         v = v_raw
                     if k.endswith('_rand'):
-                        n = k.replace('_rand', '')
-                        cur = getattr(
-                            entity, n)
-                        inc = int((v+0.99)*self.random())
-                        setattr(entity, n, cur + inc)
+                        if isinstance(v, int):
+                            n = k.replace('_rand', '')
+                            cur = getattr(
+                                entity, n)
+                            inc = int((v+0.99)*self.random())
+                            setattr(entity, n, cur + inc)
+                        elif isinstance(v, float):
+                            n = k.replace('_randf', '')
+                            cur = getattr(
+                                entity, n)
+                            inc = v*self.random()
+                            setattr(entity, n, cur + inc)
+                        elif isinstance(v, list):
+                            for vi, ve in enumerate(v):
+                                if isinstance(v, int):
+                                    n = k.replace('_rand', '')
+                                    cur = getattr(
+                                        entity, n)
+                                    cur[vi] = int((v+0.99)*self.random())
+                                    setattr(entity, n, cur)
+                                elif isinstance(v, float):
+                                    n = k.replace('_randf', '')
+                                    cur = getattr(
+                                        entity, n)
+                                    cur[vi] = v*self.random()
+                                    setattr(entity, n, cur)
                     elif k.endswith('_randf'):
                         n = k.replace('_randf', '')
                         cur = getattr(

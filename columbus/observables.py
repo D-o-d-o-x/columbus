@@ -151,7 +151,7 @@ class RayObservable(Observable):
                     'Can only raycast circular and rectangular entities!')
             sq_dist = ((self.env.agent.pos[0]-x)*self.env.width) ** 2 \
                 + ((self.env.agent.pos[1]-y)*self.env.height) ** 2
-            if sq_dist <= (radius + self.env.agent.radius + self.ray_len)**2:
+            if sq_dist <= (radius + self.env.agent.getQuasiRadius() + self.ray_len)**2:
                 entities_l.append(entity)  # cannot use yield here!
         return entities_l
 

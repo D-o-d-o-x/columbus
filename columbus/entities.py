@@ -19,6 +19,7 @@ class Entity(object):
         self.col = (255, 255, 255)
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
+        self.void_collidable = True
         self.elasticity = 1
         self.collision_changes_speed = self.env.controll_type == 'ACC'
         self.collision_elasticity = self.env.default_collision_elasticity
@@ -31,6 +32,8 @@ class Entity(object):
         self.draw_path_harm = False
         self.draw_path_harm_col = [c for c in self.draw_path_col]
         self.draw_path_harm_col[0] += int(255/3)
+        self.min_speed = 0
+        self.max_speed = math.inf
 
     def __post_init__(self):
         pass
@@ -40,6 +43,11 @@ class Entity(object):
         vx, vy = self.speed
         ax, ay = self.acc
         vx, vy = vx+ax*self.env.acc_fac,  vy+ay*self.env.acc_fac
+        speeds = math.sqrt(vx**2 + vy**2)
+        if speeds < self.min_speed:
+            vx, vy = vx/speeds*self.min_speed, vy/speeds*self.min_speed
+        if speeds > self.max_speed:
+            vx, vy = vx/speeds*self.max_speed, vy/speeds*self.max_speed
         x, y = x+vx*self.env.speed_fac, y+vy*self.env.speed_fac
         if not self.env.torus_topology:
             if x > 1 or x < 0:
@@ -73,7 +81,7 @@ class Entity(object):
             pygame.draw.line(self.env.path_overlay, col,
                              (self.last_pos[0]*self.env.width, self.last_pos[1]*self.env.height), (self.pos[0]*self.env.width, self.pos[1]*self.env.height), self.draw_path_width)
             pygame.draw.circle(self.env.path_overlay, col,
-                               (self.pos[0]*self.env.width, self.pos[1]*self.env.height), max(0, self.draw_path_width/2-1))
+                               (self.pos[0]*self.env.width, self.pos[1]*self.env.height), max(0, self.draw_path_width/2-3))
         self.last_pos = self.pos[0], self.pos[1]
 
     def on_collision(self, other, depth):
@@ -92,10 +100,17 @@ class Entity(object):
             return
         force_dir = force_dir[0]/force_dir_len, force_dir[1]/force_dir_len
         if not self.env.torus_topology:
-            if self.env.agent.pos[0] > 0.99 or self.env.agent.pos[0] < 0.01:
-                force_dir = force_dir[0], force_dir[1] * 2
-            if self.env.agent.pos[1] > 0.99 or self.env.agent.pos[1] < 0.01:
-                force_dir = force_dir[0] * 2, force_dir[1]
+            if self == self.env.agent:
+                agent = self
+            elif other == self.env.agent:
+                agent = other
+            else:
+                agent = None
+            if agent:
+                if agent.pos[0] > 0.99 or agent.pos[0] < 0.01:
+                    force_dir = force_dir[0], force_dir[1] * 2
+                if agent.pos[1] > 0.99 or agent.pos[1] < 0.01:
+                    force_dir = force_dir[0] * 2, force_dir[1]
         depth *= 1.0*self.movable/(self.movable + other.movable)/2
         depth /= other.elasticity
         force_vec = force_dir[0]*depth/self.env.width, \
@@ -138,6 +153,24 @@ class Entity(object):
 
     def kill(self):
         self.env.kill_entity(self)
+
+    def getQuasiRadius(self):
+        raise Exception()
+
+    def getTop(self):
+        raise Exception()
+
+    def getBottom(self):
+        raise Exception()
+
+    def getLeft(self):
+        raise Exception()
+
+    def getRight(self):
+        raise Exception()
+
+    def getCenter(self):
+        raise Exception()
 
 
 class CircularEntity(Entity):
@@ -208,6 +241,24 @@ class CircularEntity(Entity):
             raise Exception(
                 '[!] Shape "circle" does not know how to collide with shape "'+str(other.shape)+'"')
 
+    def getQuasiRadius(self):
+        return self.radius
+
+    def getTop(self):
+        return self.pos[1]*self.env.height - self.radius
+
+    def getBottom(self):
+        return self.pos[1]*self.env.height + self.radius
+
+    def getLeft(self):
+        return self.pos[0]*self.env.width - self.radius
+
+    def getRight(self):
+        return self.pos[0]*self.env.width + self.radius
+
+    def getCenter(self):
+        return self.pos[0]*self.env.width, self.pos[1]*self.env.height
+
 
 class RectangularEntity(Entity):
     def __init__(self, env):
@@ -227,6 +278,58 @@ class RectangularEntity(Entity):
     def _get_crash_force_dir(self, other):
         raise Exception(
             '[!] Collisions in this direction not implemented for shape "rectangle"')
+
+    def physics_step(self):
+        x, y = self.pos
+        vx, vy = self.speed
+        ax, ay = self.acc
+        vx, vy = vx+ax*self.env.acc_fac,  vy+ay*self.env.acc_fac
+        speeds = math.sqrt(vx**2 + vy**2)
+        if speeds < self.min_speed:
+            vx, vy = vx/speeds*self.min_speed, vy/speeds*self.min_speed
+        if speeds > self.max_speed:
+            vx, vy = vx/speeds*self.max_speed, vy/speeds*self.max_speed
+        x, y = x+vx*self.env.speed_fac, y+vy*self.env.speed_fac
+        if not self.env.torus_topology and self.void_collidable:
+            if x+(self.width/self.env.width) > 1 or x < 0:
+                if x < 0:
+                    x, y, vx, vy = self.calc_void_collision(
+                        x < 0, x, y, vx, vy)
+                else:
+                    x, y, vx, vy = self.calc_void_collision(
+                        x < 0, x+(self.width/self.env.width), y, vx, vy)
+                    x -= (self.width/self.env.width)
+            if y+(self.height/self.env.height) > 1 or y < 0:
+                if y < 0:
+                    x, y, vx, vy = self.calc_void_collision(
+                        2 + (x < 0), x, y, vx, vy)
+                else:
+                    x, y, vx, vy = self.calc_void_collision(
+                        2 + (x < 0), x, y+(self.height/self.env.height), vx, vy)
+                    y -= (self.height/self.env.height)
+        else:
+            x = x % 1
+            y = y % 1
+        self.speed = vx/(1+self.drag), vy/(1+self.drag)
+        self.pos = x, y
+
+    def getQuasiRadius(self):
+        return self.width + self.height
+
+    def getTop(self):
+        return self.pos[1]*self.env.height
+
+    def getBottom(self):
+        return self.pos[1]*self.env.height + self.height
+
+    def getLeft(self):
+        return self.pos[0]*self.env.width
+
+    def getRight(self):
+        return self.pos[0]*self.env.width*self.env.height + self.width
+
+    def getCenter(self):
+        return self.pos[0]*self.env.width+self.width/2, self.pos[1]*self.env.height+self.height/2
 
 
 class Agent(CircularEntity):
@@ -248,6 +351,30 @@ class Agent(CircularEntity):
             self.speed = self.env.inp[0] - 0.5, self.env.inp[1] - 0.5
         elif self.controll_type == 'ACC':
             self.acc = self.env.inp[0] - 0.5, self.env.inp[1] - 0.5
+        else:
+            raise Exception('Unsupported controll_type')
+
+
+# Does not work! Don't use!
+class PongAgent(RectangularEntity):
+    def __init__(self, env):
+        super(PongAgent, self).__init__(env)
+        self.pos = (0.5, 0.5)
+        self.col = (0, 0, 255)
+        self.drag = self.env.agent_drag
+        self.controll_type = self.env.controll_type
+        self.solid = True
+        self.movable = True
+
+    def controll_step(self):
+        self._read_input()
+        self.env.check_collisions_for(self)
+
+    def _read_input(self):
+        if self.controll_type == 'SPEED':
+            self.speed = 0, self.env.inp[1] - 0.5
+        elif self.controll_type == 'ACC':
+            self.acc = 0, self.env.inp[1] - 0.5
         else:
             raise Exception('Unsupported controll_type')
 
@@ -325,6 +452,33 @@ class FlyingChaser(Chaser):
 class Collectable(CircularEntity):
     def __init__(self, env):
         super(Collectable, self).__init__(env)
+        self.avaible = True
+        self.enforce_not_on_barrier = False
+        self.reward = 10
+        self.collectors = []
+
+    def on_collision(self, other, depth):
+        super().on_collision(other, depth)
+        if isinstance(other, Barrier):
+            self.on_barrier_collision()
+        else:
+            for Col in self.collectors:
+                if isinstance(other, Col):
+                    other.on_collect(self)
+                    self.on_collected()
+
+    def on_collected(self):
+        self.env.new_reward += self.reward
+
+    def on_barrier_collision(self):
+        if self.enforce_not_on_barrier:
+            self.pos = (self.env.random(), self.env.random())
+            self.env.check_collisions_for(self)
+
+
+class RectCollectable(RectangularEntity):
+    def __init__(self, env):
+        super(RectCollectable, self).__init__(env)
         self.avaible = True
         self.enforce_not_on_barrier = False
         self.reward = 10
@@ -476,6 +630,14 @@ class Goal(Collectable):
         self.col = (0, 200, 0)
         self.reward = 500
         self.radius = 20
+        self.collectors = [Ball]
+
+
+class RectGoal(RectCollectable):
+    def __init__(self, env):
+        super(RectGoal, self).__init__(env)
+        self.col = (0, 200, 0)
+        self.reward = 500
         self.collectors = [Ball]
 
 
