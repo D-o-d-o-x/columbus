@@ -132,6 +132,8 @@ class RayObservable(Observable):
                             'Can only raycast circular and rectangular entities!')
         return False
 
+    # Filter out entities, that we sure are out of range
+    # (so we have to do less work for the ray collisions)
     def _get_possible_entities(self):
         entities_l = []
         if entities.Void in self.chans or self.env.void_barrier:
@@ -153,6 +155,8 @@ class RayObservable(Observable):
                 entities_l.append(entity)  # cannot use yield here!
         return entities_l
 
+    # Ugly, inefficient ray casting
+    # Oh well, it works...
     def get_observation(self):
         entities = self._get_possible_entities()
         self.rays = np.zeros((self.num_rays+self.include_rand, self.num_chans))

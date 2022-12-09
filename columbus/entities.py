@@ -28,6 +28,9 @@ class Entity(object):
         self.draw_path = False
         self.draw_path_col = [int(c/5) for c in self.col]
         self.draw_path_width = 2
+        self.draw_path_harm = False
+        self.draw_path_harm_col = [c for c in self.draw_path_col]
+        self.draw_path_harm_col[0] += int(255/3)
 
     def __post_init__(self):
         pass
@@ -63,8 +66,14 @@ class Entity(object):
 
     def _draw_path(self):
         if self.draw_path and self.last_pos:
-            pygame.draw.line(self.env.path_overlay, self.draw_path_col,
+            col = self.draw_path_col
+            if self.draw_path_harm:
+                if self.env.gotHarm:
+                    col = self.draw_path_harm_col
+            pygame.draw.line(self.env.path_overlay, col,
                              (self.last_pos[0]*self.env.width, self.last_pos[1]*self.env.height), (self.pos[0]*self.env.width, self.pos[1]*self.env.height), self.draw_path_width)
+            pygame.draw.circle(self.env.path_overlay, col,
+                               (self.pos[0]*self.env.width, self.pos[1]*self.env.height), max(0, self.draw_path_width/2-1))
         self.last_pos = self.pos[0], self.pos[1]
 
     def on_collision(self, other, depth):
