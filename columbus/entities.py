@@ -19,7 +19,7 @@ class Entity(object):
         self.col = (255, 255, 255)
         self.solid = False
         self.movable = False  # False = Non movable, True = Movable, x>1: lighter movable
-        self.void_collidable = True
+        self.void_collidable = False
         self.elasticity = 1
         self.collision_changes_speed = self.env.controll_type == 'ACC'
         self.collision_elasticity = self.env.default_collision_elasticity
@@ -49,7 +49,7 @@ class Entity(object):
         if speeds > self.max_speed:
             vx, vy = vx/speeds*self.max_speed, vy/speeds*self.max_speed
         x, y = x+vx*self.env.speed_fac, y+vy*self.env.speed_fac
-        if not self.env.torus_topology:
+        if not self.env.torus_topology and self.void_collidable:
             if x > 1 or x < 0:
                 x, y, vx, vy = self.calc_void_collision(x < 0, x, y, vx, vy)
             if y > 1 or y < 0:
@@ -341,6 +341,7 @@ class Agent(CircularEntity):
         self.controll_type = self.env.controll_type
         self.solid = True
         self.movable = True
+        self.void_collidable = True
 
     def controll_step(self):
         self._read_input()
